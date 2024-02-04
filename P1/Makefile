@@ -1,5 +1,5 @@
-SOURCE_DIR := src
-TARGET_DIR := out
+SOURCE_DIR := .
+TARGET_DIR := bin
 
 SRCS := $(wildcard $(SOURCE_DIR)/*.java)
 CLS := $(SRCS:$(SOURCE_DIR)/%.java=$(TARGET_DIR)/%.class)
