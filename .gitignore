@@ -1,6 +1,9 @@
 # Compiled class file
 *.class
 
+# Linter files
+bin/
+
 # Log file
 *.log
 
