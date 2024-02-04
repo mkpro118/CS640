@@ -6,7 +6,7 @@ CLS := $(SRCS:$(SOURCE_DIR)/%.java=$(TARGET_DIR)/%.class)
 
 JC := javac
 JV := java
-JCFLAGS := -d $(TARGET_DIR)/ -cp $(SOURCE_DIR)/ -Wall -Xlint:all
+JCFLAGS := -d $(TARGET_DIR)/ -cp $(SOURCE_DIR)/ -Werror -Xlint:all
 JVFLAGS := -cp $(SOURCE_DIR)/
 
 IPERFER := Iperfer
@@ -17,11 +17,11 @@ IPERFER := Iperfer
 
 all: $(CLS)
 
-$(CLS): $(TARGET_DIR)/%.class: $(SOURCE_DIR)/%.java
-	$(JC) $(JCFLAGS) $<
+$(CLS): $(SRCS)
+	$(JC) $(JCFLAGS) $(SRCS)
 
 run:
-	JV $(JVFLAGS)/$(IPERFER)
+	$(JV) $(JVFLAGS) $(IPERFER)
 
 clean:
 	rm $(TARGET_DIR)/*.class
