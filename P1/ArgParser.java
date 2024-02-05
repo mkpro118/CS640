@@ -2,6 +2,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Arrays;
 
+/**
+ * @author Mrigank Kumar
+ */
 class Option<T> {
     private String description;
     private Class<T> type;
@@ -54,6 +57,9 @@ class Option<T> {
     }
 }
 
+/**
+ * @author Mrigank Kumar
+ */
 public class ArgParser {
     @SuppressWarnings("serial")
     private static class TypeNotSupportedException extends RuntimeException {
@@ -94,14 +100,18 @@ public class ArgParser {
     }
 
     public <T> void addOption(String key, String type) {
-        addOption(key, null, getClass(type));
+        addOption(key, getClass(type), null);
+    }
+
+    public <T> void addOption(String key, Class<T> type) {
+        addOption(key, type, null);
     }
 
     public <T> void addOption(String key, String type, String description) {
-        addOption(key, description, getClass(type));
+        addOption(key, getClass(type), description);
     }
 
-    public <T> void addOption(String key, String description, Class<T> type) {
+    public <T> void addOption(String key, Class<T> type, String description) {
         options.put(key, new Option<T>(description, type));
     }
 
