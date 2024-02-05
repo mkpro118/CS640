@@ -13,21 +13,13 @@ class Option<T> {
         this.value = Option.getDefaultValue(type);
     }
 
-    public String getDescription() {
-        return description;
-    }
+    public String getDescription() { return description; }
 
-    public Class<T> getType() {
-        return type;
-    }
+    public Class<T> getType() { return type; }
 
-    public T getValue() {
-        return value;
-    }
+    public T getValue() { return value; }
 
-    public void setValue(T value) {
-        this.value = value;
-    }
+    public void setValue(T value) { this.value = value; }
 
     @SuppressWarnings("unchecked")
     private static <T> T getDefaultValue(Class<T> type) {
@@ -119,9 +111,7 @@ public class ArgParser {
         return option != null ? option.getValue() : null;
     }
 
-    public Option<?> getOption(String key) {
-        return options.get(key);
-    }
+    public Option<?> getOption(String key) { return options.get(key); }
 
     public <T> void parse(String args) {
         parse(Arrays.stream(args.split(" "))
@@ -132,21 +122,15 @@ public class ArgParser {
     @SuppressWarnings("unchecked")
     public <T> void parse(String[] args) {
         for (int i = 0; i < args.length; i++) {
-            Option<?> option = (Option<?>) options.get(args[i]);
+            Option<?> option = options.get(args[i]);
 
-            if (option == null) {
+            if (option == null)
                 continue;
-            }
 
-            if (option.getType().equals(Boolean.class)) {
-                Option<Boolean> opt = (Option<Boolean>) option;
-                opt.setValue(true);
-                continue;
-            }
-
-            if (i + 1 >= args.length) { break; }
-
-            setOptionValue(option, args[i + 1]);
+            if (option.getType().equals(Boolean.class))
+                ((Option<Boolean>) option).setValue(true);
+            else if (i + 1 < args.length)
+                setOptionValue(option, args[++i]);
         }
     }
 
