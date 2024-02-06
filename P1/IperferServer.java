@@ -1,6 +1,13 @@
 public class IperferServer extends NetworkTest {
-    public void runServer(ServerConfig config) {
-        // Implement server logic to receive data
+    ServerConfig config;
+
+    public IperferServer(ServerConfig config) {
+        this.config = config;
+    }
+
+    @Override
+    public void startSession() {
+
     }
 
     @Override

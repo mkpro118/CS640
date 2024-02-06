@@ -1,9 +1,16 @@
 public class IperferClient extends NetworkTest {
-    public void runClient(ClientConfig config) {
+    ClientConfig config;
+
+    public IperferClient(ClientConfig config) {
+        this.config = config;
+    }
+
+    @Override
+    public void startSession() {
         // Implement client logic to send data
     }
 
-    public void stopClient() {
+    public void stopSession() {
         // Implement client termination logic
     }
 
