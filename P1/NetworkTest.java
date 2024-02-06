@@ -8,6 +8,8 @@ public abstract class NetworkTest {
     protected InputStream in;
     protected long totalBytes;
 
+    public abstract void startSession();
+
     public abstract void startTest();
 
     protected void printSummary(long startTime, long endTime) {
