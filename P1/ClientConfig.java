@@ -1,1 +1,1 @@
-public record ClientConfig(String serverHostname, int serverPort, int time) {}
+public record ClientConfig(String hostname, int serverPort, int time) {}
