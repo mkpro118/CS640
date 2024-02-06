@@ -1,4 +1,5 @@
 import java.util.HashMap;
+import java.util.Set;
 import java.util.Map;
 import java.util.Arrays;
 
@@ -9,11 +10,13 @@ class Option<T> {
     private String description;
     private Class<T> type;
     private T value;
+    private boolean found;
 
     public Option(String description, Class<T> type) {
         this.description = description;
         this.type = type;
         this.value = Option.getDefaultValue(type);
+        this.found = false;
     }
 
     public String getDescription() { return description; }
@@ -22,7 +25,12 @@ class Option<T> {
 
     public T getValue() { return value; }
 
-    public void setValue(T value) { this.value = value; }
+    public void setValue(T value) {
+        this.value = value;
+        this.found = true;
+    }
+
+    public boolean found() { return found; }
 
     @SuppressWarnings("unchecked")
     private static <T> T getDefaultValue(Class<T> type) {
@@ -70,11 +78,10 @@ public class ArgParser {
         }
     }
 
-    private Map<String, Option<?>> options;
-
-    private static final Map<String, Class<?>> typeMap = new HashMap<>();
+    private static final Map<String, Class<?>> typeMap;
 
     static {
+        typeMap = new HashMap<>();
         // Boolean type
         typeMap.put("boolean", Boolean.class);
 
@@ -95,24 +102,30 @@ public class ArgParser {
         typeMap.put("string", String.class);
     }
 
+    private Map<String, Option<?>> options;
+
     public ArgParser() {
         options = new HashMap<>();
     }
 
-    public <T> void addOption(String key, String type) {
+    public ArgParser addOption(String key, String type) {
         addOption(key, getClass(type), null);
+        return this;
     }
 
-    public <T> void addOption(String key, Class<T> type) {
+    public <T> ArgParser addOption(String key, Class<T> type) {
         addOption(key, type, null);
+        return this;
     }
 
-    public <T> void addOption(String key, String type, String description) {
+    public ArgParser addOption(String key, String type, String description) {
         addOption(key, getClass(type), description);
+        return this;
     }
 
-    public <T> void addOption(String key, Class<T> type, String description) {
+    public <T> ArgParser addOption(String key, Class<T> type, String description) {
         options.put(key, new Option<T>(description, type));
+        return this;
     }
 
     @SuppressWarnings("unchecked")
@@ -122,6 +135,8 @@ public class ArgParser {
     }
 
     public Option<?> getOption(String key) { return options.get(key); }
+
+    public Set<String> getOptionsSet() { return options.keySet(); }
 
     public <T> void parse(String args) {
         parse(Arrays.stream(args.split(" "))
@@ -142,6 +157,10 @@ public class ArgParser {
             else if (i + 1 < args.length)
                 setOptionValue(option, args[++i]);
         }
+    }
+
+    public Option<?> removeOption(String name) {
+        return options.remove(name);
     }
 
     @SuppressWarnings("unchecked")
