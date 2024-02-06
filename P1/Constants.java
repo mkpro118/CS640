@@ -1,5 +1,6 @@
 public enum Constants {
     CHUNK_SIZE(1000),
+    MILLISECONDS_IN_SECONDS(1000),
     BYTES_IN_KB(1000),
     BITS_IN_BYTE(8);
 
