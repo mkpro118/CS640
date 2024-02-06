@@ -11,9 +11,18 @@ public abstract class NetworkTest {
     public abstract void startTest();
 
     protected void printSummary(long startTime, long endTime) {
-        double duration = (endTime - startTime) / 1000.0; // Duration in seconds
-        double totalKB = totalBytes / 1000.0; // Total data in kilobytes
-        double rate = (totalKB * 8) / duration; // Rate in megabits per second
+        // Time delta in milliseconds
+        double delta = endTime - startTime;
+
+        // Duration in seconds
+        double duration = delta / Constants.MILLISECONDS_IN_SECONDS.getValue();
+
+        // Total data in kilobytes
+        double totalKB = (double) totalBytes / Constants.BYTES_IN_KB.getValue();
+
+        // Rate in megabits per second
+        double rate = (totalKB * Constants.BITS_IN_BYTE.getValue()) / duration;
+
         System.out.printf("sent=%f KB rate=%f Mbps\n", totalKB, rate);
     }
 }
