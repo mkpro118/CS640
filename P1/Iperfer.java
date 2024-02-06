@@ -1,6 +1,6 @@
 public class Iperfer {
 
-    private final static String USAGE_MSG = "Usage: java Iperfer -c -h"
+    private final static String USAGE_MSG = "Usage: java Iperfer -[c|s] -h"
         + " <server hostname> -p <server port> -t <time>";
 
     private static void printUsage() {
@@ -12,13 +12,12 @@ public class Iperfer {
     }
 
     public static void main(String[] args) {
-        System.out.println(java.util.Arrays.toString(args));
         IperferArgParser parser = new IperferArgParser();
 
         try {
             parser.parse(args);
         } catch (IperferArgParser.ArgsNotParsedException e) {
-            System.out.println(e.getMessage());
+            printErrorMsg(e.getMessage());
             return;
         }
 
@@ -29,7 +28,8 @@ public class Iperfer {
         } else if (parser.isServerMode()) {
             session = new IperferServer(parser.getServerConfig());
         } else {
-            System.out.println("Failed to parse args!");
+            printErrorMsg("Failed to parse args!");
+            printUsage();
             return;
         }
 
