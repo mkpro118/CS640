@@ -15,19 +15,24 @@ public class Iperfer {
         System.out.println(java.util.Arrays.toString(args));
         IperferArgParser parser = new IperferArgParser();
 
-        parser.parse(args);
+        try {
+            parser.parse(args);
+        } catch (IperferArgParser.ArgsNotParsedException e) {
+            System.out.println(e.getMessage());
+            return;
+        }
 
-        System.out.println("isClientMode() = " + parser.isClientMode());
-        System.out.println("isServerMode() = " + parser.isServerMode());
+        NetworkTest session;
 
         if (parser.isClientMode()) {
-            System.out.println("Server Host Name: " + parser.getHostname());
-            System.out.println("Server Port: " + parser.getServerPort());
-            System.out.println("Time: " + parser.getTime());
+            session = new IperferClient(parser.getClientConfig());
         } else if (parser.isServerMode()) {
-            System.out.println("Listen Port: " + parser.getListenPort());
+            session = new IperferServer(parser.getServerConfig());
         } else {
-            System.out.println("Failed!");
+            System.out.println("Failed to parse args!");
+            return;
         }
+
+        session.startSession();
     }
 }
