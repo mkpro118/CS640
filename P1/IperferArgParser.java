@@ -1,6 +1,6 @@
 public class IperferArgParser extends ArgParser {
     @SuppressWarnings("serial")
-    private static class ArgsNotParsedException extends RuntimeException {
+    public static class ArgsNotParsedException extends RuntimeException {
         public ArgsNotParsedException(String msg) {
             super(msg);
         }
@@ -114,6 +114,18 @@ public class IperferArgParser extends ArgParser {
             return serverConfig.listenPort();
 
         return -1;
+    }
+
+    public ClientConfig getClientConfig() {
+        checkParsed();
+
+        return clientConfig;
+    }
+
+    public ServerConfig getServerConfig() {
+        checkParsed();
+
+        return serverConfig;
     }
 
     private final void checkParsed() {
