@@ -1,4 +1,5 @@
 import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,16 +21,41 @@ public class ConnectionUtils {
     }
 
     /**
-     * Creates a socket connection to the specified hostname and port
+     * Creates a client side socket connection with the given configurations
      *
-     * @param hostname the hostname of the server
-     * @param port     the port number
+     * @param config A client configuration object to set up the socket
      *
      * @return the created Socket object
      */
-    public final static Socket createSocket(String hostname, int port) {
+    public final static Socket createSocket(ClientConfig config) {
         try {
-            return new Socket(hostname, port);
+            Socket socket = new Socket();
+
+            socket.connect(new InetSocketAddress(config.hostname(),
+                                                 config.serverPort()));
+            return socket;
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error creating socket: " + e.getMessage());
+            System.exit(1);
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates a server side socket connection with the given configurations
+     *
+     * @param config A server configuration object to set up the socket
+     *
+     * @return the created Socket object
+     */
+    public final static Socket createSocket(ServerConfig config) {
+        try {
+            Socket socket = new Socket();
+
+            socket.bind(new InetSocketAddress(config.listenPort()));
+            return socket;
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error creating socket: " + e.getMessage());
