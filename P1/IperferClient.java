@@ -1,7 +1,9 @@
 public class IperferClient extends NetworkTest {
     ClientConfig config;
+    private final static String clientFormat = "sent=%d KB rate=%f Mbps\n";
 
     public IperferClient(ClientConfig config) {
+        super(clientFormat);
         this.config = config;
     }
 

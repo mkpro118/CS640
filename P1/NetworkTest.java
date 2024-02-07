@@ -23,6 +23,18 @@ public abstract class NetworkTest {
     // The total number of bytes sent or received during the test
     protected long totalBytes;
 
+    // The format string to print out network statistics
+    protected final String summaryFormat;
+
+    /**
+     * Default NetworkTest constructor, initializes the summary format string
+     *
+     * @param  format The summary format string
+     */
+    protected NetworkTest(String format) {
+        summaryFormat = format;
+    }
+
     /**
      * Starts a session for the network test
      * This method should be implemented by subclasses to perform any
@@ -46,10 +58,12 @@ public abstract class NetworkTest {
 
     /**
      * Print network connection speed statistics
-     * This method should be implemented by subclasses to print information
-     * about the network connection
      */
-    public abstract void printSummary();
+    public void printSummary() {
+        NetworkTestStats stats = getStats();
+
+        System.out.printf(summaryFormat, stats.totalKB(), stats.rate());
+    }
 
     /**
      * Calculate the total data sent or received during
@@ -57,7 +71,7 @@ public abstract class NetworkTest {
      *
      * @return A NetworkTestStats instance with the calculated statistics
      */
-    protected NetworkTestStats getStats() {
+    public NetworkTestStats getStats() {
         // Time delta in milliseconds
         double delta = endTime - startTime;
 
