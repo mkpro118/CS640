@@ -1,7 +1,7 @@
 /**
- * Represents configuration parameters for a client
+ * Represents configuration parameters for an Iperfer client
  *
- * This record represents a configuration for a client application, including
+ * This record represents a configuration for an Iperfer client, including
  * the hostname of the server, the port number of the server,
  * and the test duration
  *
