@@ -9,6 +9,8 @@ import java.io.InputStream;
  * This class defines the common structure and behavior of network test sessions
  */
 public abstract class NetworkTest {
+    protected record NetworkTestStats(long totalKB, double rate) {}
+
     // The socket used for communication
     protected Socket socket;
 
@@ -22,11 +24,18 @@ public abstract class NetworkTest {
     protected long totalBytes;
 
     /**
-     * Starts a session for the network test.
+     * Starts a session for the network test
      * This method should be implemented by subclasses to perform any
      * necessary setup before starting the actual test
      */
     public abstract void startSession();
+
+    /**
+     * Stops the network test session
+     */
+    public void stopSession() {
+        ConnectionUtils.closeSocket(socket);
+    }
 
     /**
      * Starts the network test
@@ -36,6 +45,13 @@ public abstract class NetworkTest {
     public abstract void startTest();
 
     /**
+     * Print network connection speed statistics
+     * This method should be implemented by subclasses to print information
+     * about the network connection
+     */
+    public abstract void printSummary();
+
+    /**
      * Prints a summary of the network test results
      * This method calculates and prints the total data sent or received during
      * the test session and the corresponding data transfer rate
@@ -43,7 +59,7 @@ public abstract class NetworkTest {
      * @param startTime the start time of the test session in milliseconds
      * @param endTime   the end time of the test session in milliseconds
      */
-    protected void printSummary(long startTime, long endTime) {
+    protected NetworkTestStats getStats(long startTime, long endTime) {
         // Time delta in milliseconds
         double delta = endTime - startTime;
 
@@ -51,11 +67,11 @@ public abstract class NetworkTest {
         double duration = delta / Constants.MILLISECONDS_IN_SECONDS.getValue();
 
         // Total data in kilobytes
-        double totalKB = (double) totalBytes / Constants.BYTES_IN_KB.getValue();
+        long totalKB = totalBytes / Constants.BYTES_IN_KB.getValue();
 
         // Rate in megabits per second
         double rate = (totalKB * Constants.BITS_IN_BYTE.getValue()) / duration;
 
-        System.out.printf("sent=%f KB rate=%f Mbps\n", totalKB, rate);
+        return new NetworkTestStats(totalKB, rate);
     }
 }
