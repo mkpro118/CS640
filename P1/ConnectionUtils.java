@@ -102,6 +102,22 @@ public class ConnectionUtils {
     }
 
     /**
+     * Closes the specified server socket
+     *
+     * @param socket the socket to be closed
+     */
+    public final static void closeSocket(ServerSocket socket) {
+        try {
+            if (!socket.isClosed())
+                socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error closing socket: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    /**
      * Sends data over the specified socket
      *
      * @param socket the socket for sending data
