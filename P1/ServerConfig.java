@@ -1,4 +1,6 @@
 /**
+ * @author Mrigank Kumar
+ *
  * Represents configuration parameters for an Iperfer server
  *
  * This record represents a configuration for an Iperfer server, including
