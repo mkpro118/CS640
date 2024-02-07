@@ -14,11 +14,11 @@ public abstract class NetworkTest {
     // The socket used for communication
     protected Socket socket;
 
-    // The output stream for sending data
-    protected OutputStream out;
+    // The start time of the network test
+    protected long startTime;
 
-    // The input stream for receiving data
-    protected InputStream in;
+    // The end time of the network test
+    protected long endTime;
 
     // The total number of bytes sent or received during the test
     protected long totalBytes;
@@ -52,14 +52,12 @@ public abstract class NetworkTest {
     public abstract void printSummary();
 
     /**
-     * Prints a summary of the network test results
-     * This method calculates and prints the total data sent or received during
+     * Calculate the total data sent or received during
      * the test session and the corresponding data transfer rate
      *
-     * @param startTime the start time of the test session in milliseconds
-     * @param endTime   the end time of the test session in milliseconds
+     * @return A NetworkTestStats instance with the calculated statistics
      */
-    protected NetworkTestStats getStats(long startTime, long endTime) {
+    protected NetworkTestStats getStats() {
         // Time delta in milliseconds
         double delta = endTime - startTime;
 
