@@ -34,6 +34,10 @@ public class IperferServer extends NetworkTest {
     public void startSession() {
         server = ConnectionUtils.createSocket(config);
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            ConnectionUtils.closeSocket(server);
+        }));
+
         // Basic logging
         System.out.printf("Listening for TCP connections on Port: %d\n",
             config.listenPort());
