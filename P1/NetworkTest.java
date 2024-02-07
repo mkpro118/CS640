@@ -2,16 +2,47 @@ import java.net.Socket;
 import java.io.OutputStream;
 import java.io.InputStream;
 
+/**
+ * @author Mrigank Kumar
+ * 
+ * Abstract class representing a network test.
+ * This class defines the common structure and behavior of network test sessions
+ */
 public abstract class NetworkTest {
+    // The socket used for communication
     protected Socket socket;
+
+    // The output stream for sending data
     protected OutputStream out;
+
+    // The input stream for receiving data
     protected InputStream in;
+
+    // The total number of bytes sent or received during the test
     protected long totalBytes;
 
+    /**
+     * Starts a session for the network test.
+     * This method should be implemented by subclasses to perform any
+     * necessary setup before starting the actual test
+     */
     public abstract void startSession();
 
+    /**
+     * Starts the network test
+     * This method should be implemented by subclasses to carry out the specific
+     * network test functionality
+     */
     public abstract void startTest();
 
+    /**
+     * Prints a summary of the network test results
+     * This method calculates and prints the total data sent or received during
+     * the test session and the corresponding data transfer rate
+     *
+     * @param startTime the start time of the test session in milliseconds
+     * @param endTime   the end time of the test session in milliseconds
+     */
     protected void printSummary(long startTime, long endTime) {
         // Time delta in milliseconds
         double delta = endTime - startTime;
