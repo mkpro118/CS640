@@ -35,10 +35,8 @@ public class IperferServer extends NetworkTest {
         server = ConnectionUtils.createSocket(config);
 
         // Basic logging
-        System.out.printf("Listening for TCP connections on Port: %d\n"
-            + "Using Chunk Size: %d\n",
-            config.listenPort(),
-            Constants.CHUNK_SIZE.getValue());
+        System.out.printf("Listening for TCP connections on Port: %d\n",
+            config.listenPort());
 
         do { // Serve Forever
             System.out.println();
