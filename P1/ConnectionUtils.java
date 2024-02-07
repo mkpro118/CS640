@@ -107,8 +107,8 @@ public class ConnectionUtils {
      * @param socket the socket for sending data
      */
     public final static void sendData(Socket socket) {
-        try (OutputStream outputStream = socket.getOutputStream()) {
-            outputStream.write(dataBuffer);
+        try {
+            socket.getOutputStream().write(dataBuffer);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error sending data: " + e.getMessage());
@@ -124,8 +124,8 @@ public class ConnectionUtils {
      * @return the size of the data recieved
      */
     public final static int receiveData(Socket socket) {
-        try (InputStream inputStream = socket.getInputStream()) {
-            return inputStream.read(dataBuffer);
+        try {
+            return socket.getInputStream().read(dataBuffer);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error receiving data: " + e.getMessage());
