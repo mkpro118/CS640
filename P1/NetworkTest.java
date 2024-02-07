@@ -83,6 +83,7 @@ public abstract class NetworkTest {
 
         // Rate in megabits per second
         double rate = (totalKB * Constants.BITS_IN_BYTE.getValue()) / duration;
+        rate /= Constants.KBITS_IN_MBITS.getValue();
 
         return new NetworkTestStats(totalKB, rate);
     }
