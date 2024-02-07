@@ -1,4 +1,5 @@
 import java.net.Socket;
+import java.net.ServerSocket;
 import java.net.InetSocketAddress;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,15 +51,34 @@ public class ConnectionUtils {
      *
      * @return the created Socket object
      */
-    public final static Socket createSocket(ServerConfig config) {
+    public final static ServerSocket createSocket(ServerConfig config) {
         try {
-            Socket socket = new Socket();
+            ServerSocket socket = new ServerSocket();
 
             socket.bind(new InetSocketAddress(config.listenPort()));
             return socket;
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error creating socket: " + e.getMessage());
+            System.exit(1);
+        }
+
+        return null;
+    }
+
+    /**
+     * Accept a socket on the given server socket, and return the client socket
+     *
+     * @param  socket The server socket to accept connections on
+     *
+     * @return        The connected client socket
+     */
+    public final static Socket getClient(ServerSocket socket) {
+        try {
+            return socket.accept();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error accepting connection: " + e.getMessage());
             System.exit(1);
         }
 
@@ -101,19 +121,17 @@ public class ConnectionUtils {
      *
      * @param socket the socket for receiving data
      *
-     * @return the received data as a byte array
+     * @return the size of the data recieved
      */
-    public final static byte[] receiveData(Socket socket) {
+    public final static int receiveData(Socket socket) {
         try (InputStream inputStream = socket.getInputStream()) {
-            inputStream.read(dataBuffer);
-
-            return dataBuffer;
+            return inputStream.read(dataBuffer);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error receiving data: " + e.getMessage());
             System.exit(1);
         }
 
-        return null;
+        return -1;
     }
 }
