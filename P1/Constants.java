@@ -14,6 +14,9 @@ public enum Constants {
     MILLISECONDS_IN_SECONDS(1000),
 
     /** The conversion factor from bytes to kilobytes */
+    KB_IN_MB(1000),
+
+    /** The conversion factor from bytes to kilobytes */
     BYTES_IN_KB(1000),
 
     /** The conversion factor from bits to bytes */
