@@ -121,7 +121,7 @@ public class ConnectionUtils {
      *
      * @param socket the socket for receiving data
      *
-     * @return the size of the data recieved
+     * @return the size of the data received
      */
     public final static int receiveData(Socket socket) {
         try {
