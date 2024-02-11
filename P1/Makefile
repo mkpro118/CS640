@@ -10,12 +10,12 @@ JCFLAGS := -d $(TARGET_DIR)/ -cp $(SOURCE_DIR)/ -Werror -Xlint:all
 JVFLAGS := -cp $(TARGET_DIR)
 
 IPERFER := Iperfer
-IPERFER_CLIENT_ARGS := -c -h 127.0.0.1 -p 5001 -t 10
+IPERFER_CLIENT_ARGS := -c -h 127.0.0.1 -p 5001 -t 20
 IPERFER_SERVER_ARGS := -s -p 5001
 
 .SUFFIXES: .java
 
-.PHONY: all clean
+.PHONY: all clean client server
 
 all: $(CLS)
 
@@ -30,3 +30,7 @@ client: all
 
 clean:
 	rm $(TARGET_DIR)/*.class
+
+mn:
+	sudo python assign1/assign1_topo.py
+
