@@ -30,3 +30,6 @@ client: all
 
 clean:
 	rm $(TARGET_DIR)/*.class
+
+mn:
+	sudo python assign1/assign1_topo.py
