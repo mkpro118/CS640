@@ -23,34 +23,34 @@ MN_SCRIPT := assign1/assign1_topo.py
 all: $(CLS)
 
 $(CLS): $(SRCS)
-    $(JC) $(JCFLAGS) $(SRCS)
+	$(JC) $(JCFLAGS) $(SRCS)
 
 server: all
-    $(JV) $(JVFLAGS) $(IPERFER) $(IPERFER_SERVER_ARGS)
+	$(JV) $(JVFLAGS) $(IPERFER) $(IPERFER_SERVER_ARGS)
 
 client: all
-    $(JV) $(JVFLAGS) $(IPERFER) $(IPERFER_CLIENT_ARGS)
+	$(JV) $(JVFLAGS) $(IPERFER) $(IPERFER_CLIENT_ARGS)
 
 clean:
-    rm -fr $(TARGET_DIR)/*.class
-    rm -fr latency*
-    rm -fr throughput*
-    rm -fr MP*
+	rm -fr $(TARGET_DIR)/*.class
+	rm -fr latency*
+	rm -fr throughput*
+	rm -fr MP*
 
 mn_clean:
-        sudo mn -c
+	sudo mn -c
 
 mn: all mn_clean
-        sudo $(PY) $(MN_SCRIPT)
+	sudo $(PY) $(MN_SCRIPT)
 
 q2: all mn_clean
-        sudo $(PY) $(MN_SCRIPT) q2
+	sudo $(PY) $(MN_SCRIPT) q2
 
 q3: all mn_clean
-        sudo $(PY) $(MN_SCRIPT) q3
+	sudo $(PY) $(MN_SCRIPT) q3
 
 q4: all mn_clean
-        sudo $(PY) $(MN_SCRIPT) q4
+	sudo $(PY) $(MN_SCRIPT) q4
 
 qs: all mn_clean
-        sudo $(PY) $(MN_SCRIPT) q2 q3 q4
+	sudo $(PY) $(MN_SCRIPT) q2 q3 q4
