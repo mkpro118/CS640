@@ -56,7 +56,8 @@ if __name__ == '__main__':
 
     # Run network
     net.start()
-    CLI(net, script='/home/mininet/Private/CS640/P1/assign1/mn_script.sh')
+    CLI(net, script='/home/mininet/Private/CS640/P1/assign1/mn_q2_script.sh')
+    CLI(net, script='/home/mininet/Private/CS640/P1/assign1/mn_q3_script.sh')
     CLI( net )
     net.stop()
 
