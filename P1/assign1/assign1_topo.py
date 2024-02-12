@@ -47,6 +47,9 @@ class AssignmentNetworks(Topo):
         
         
 if __name__ == '__main__':
+    import sys
+    import os
+
     setLogLevel( 'info' )
 
     # Create data network
@@ -56,8 +59,13 @@ if __name__ == '__main__':
 
     # Run network
     net.start()
-    CLI(net, script='/home/mininet/Private/CS640/P1/assign1/mn_q2_script.sh')
-    CLI(net, script='/home/mininet/Private/CS640/P1/assign1/mn_q3_script.sh')
-    CLI( net )
+
+    if len(sys.argv) > 1:
+        for arg in sys.argv[1:]:
+            script_file = '/home/mininet/Private/CS640/P1/assign1/mn_' + arg + '_script.sh'
+            if os.path.exists(script_file) and os.path.isfile(script_file):
+                CLI(net, script=script_file)
+    else:
+       CLI( net )
     net.stop()
 
