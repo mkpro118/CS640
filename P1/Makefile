@@ -37,16 +37,19 @@ clean:
 	rm -fr throughput*
 	rm -fr MP*
 
-mn: all
+mn_clean:
+	sudo mn -c
+
+mn: all mn_clean
 	sudo $(PY) $(MN_SCRIPT)
 
-q2: all
+q2: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q2
 
-q3: all
+q3: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q3
 
-q4: all
+q4: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q4
 
 qs: all
