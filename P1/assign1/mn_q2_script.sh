@@ -18,7 +18,9 @@ c0 echo "Starting throughput measurements"
 
 c0 echo "Booting up servers"
 h2 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5001 &
+h2 echo "Server on h2 is up!"
 h3 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5002 &
+h3 echo "Server on h3 is up!"
 c0 echo "Servers up and running"
 
 h1 echo "Running client on link 1"
