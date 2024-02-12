@@ -31,17 +31,33 @@ c0 echo -e '\nAll servers up and running\n'
 
 h4 echo -n 'Running Iperfer client between h8 and h4 ... '
 h4 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.8 -p 5001 -t 20 > answersT.txt &
-h4 echo -e 'Done!\n'
+
 
 h9 echo -n 'Running Iperfer client between h9 and h7 ... '
 h9 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.7 -p 5002 -t 20 >> answersT.txt &
-h9 echo -e 'Done!\n'
+
 
 h10 echo -n 'Running Iperfer client between h10 and h1 ... '
 h10 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.1 -p 5003 -t 20 >> answersT.txt &
-h10 echo -e 'Done!\n'
 
 
+
+c0 echo -e '\nWaiting for hosts to finish\n'
+h4 wait $(jobs -p); echo 'h4 done!'
+h9 wait $(jobs -p); echo 'h9 done!'
+h10 wait $(jobs -p); echo 'h10 done!'
+
+c0 echo -n 'Stopping server on h8... '
+h8 pkill java
+c0 echo -e 'Done\n'
+
+c0 echo -n 'Stopping server on h7... '
+h7 pkill java
+c0 echo -e 'Done\n'
+
+c0 echo -n 'Stopping server on h1... '
+h1 pkill java
+c0 echo -e 'Done\n'
 
 
 
