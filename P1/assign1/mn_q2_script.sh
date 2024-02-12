@@ -21,30 +21,30 @@ h5 wait $(jobs -p); echo 'Link 4 done!'
 h6 wait $(jobs -p); echo 'Link 5 done!'
 c0 echo -e '\nStarting throughput measurements\n'
 
-c0 echo -e 'Booting up servers...\n'
+c0 echo -e 'Booting up Iperfer servers...\n'
 h2 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5001 &
 h2 echo 'Server on h2 is up!'
 h3 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5002 &
 h3 echo 'Server on h3 is up!'
 c0 echo -e '\nAll servers up and running\n'
 
-h1 echo 'Running client on link 1'
+h1 echo -n 'Running Iperfer client on link 1... '
 h1 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.2 -p 5001 -t 20 > throughput_L1.txt
 h1 echo -e 'Done!\n'
 
-h3 echo 'Running client on link 2'
+h3 echo -n 'Running Iperfer client on link 2... '
 h3 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.2 -p 5001 -t 20 > throughput_L2.txt
 h3 echo -e 'Done!\n'
 
-h4 echo 'Running client on link 3'
+h4 echo -n 'Running Iperfer client on link 3... '
 h4 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.3 -p 5002 -t 20 > throughput_L3.txt
 h4 echo -e 'Done!\n'
 
-h5 echo 'Running client on link 4'
+h5 echo -n 'Running Iperfer client on link 4... '
 h5 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.3 -p 5002 -t 20 > throughput_L4.txt
 h5 echo -e 'Done!\n'
 
-h6 echo 'Running client on link 5'
+h6 echo -n 'Running Iperfer client on link 5... '
 h6 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.3 -p 5002 -t 20 > throughput_L5.txt
 h6 echo -e 'Done!\n'
 
@@ -53,7 +53,7 @@ h2 pkill java
 h3 pkill java
 c0 echo -e 'Done!\n'
 
-c0 echo -e 'Running H1 to H4 tests\n'
+c0 echo -e 'Running H1 to H4 latency and throughput tests\n'
 c0 echo -e 'Pinging h4 from h1 \n'
 h1 ping 10.0.0.4 -c 20 > latency_Q2.txt &
 
