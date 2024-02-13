@@ -16,17 +16,17 @@ h5 echo 'Server on h5 is up!'
 h1 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5002 &
 h1 echo 'Server on h1 is up!'
 
-h6 echo -n 'Running Iperfer client between h6 and h5 ... '
-h6 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.5 -p 5001 -t 20 > throughput_h1-h4.txt &
+h6 echo 'Running Iperfer client between h6 and h5 ... '
+h6 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.5 -p 5001 -t 20 > throughput_h5-h6.txt &
 
-h4 echo -n 'Running Iperfer client between h4 and h1 ... '
-h4 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.1 -p 5002 -t 20 > throughput_h5-h6.txt &
+h4 echo 'Running Iperfer client between h4 and h1 ... '
+h4 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.1 -p 5002 -t 20 > throughput_h1-h4.txt &
 
 c0 echo -e '\nWaiting for hosts to finish\n'
-h5 wait $(jobs -p); echo 'h5 done!'
-h1 wait $(jobs -p); echo 'h1 done!'
+h6 wait $(jobs -p); echo 'h6 done!'
+h4 wait $(jobs -p); echo 'h4 done!'
 
-c0 echo -n 'Stopping server on h5... '
+c0 echo 'Stopping server on h5... '
 h5 pkill java
 c0 echo -e 'Done\n'
 
