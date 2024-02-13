@@ -33,6 +33,11 @@ public class IperferServer extends NetworkTest {
         // make a server socket
         ServerSocket serverSocket = ConnectionUtils.createSocket(config);
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            ConnectionUtils.closeSocket(serverSocket);
+            System.out.flush();
+        }));
+
         // accept a socket connection forever
         for(;;) {
             socket = ConnectionUtils.getClient(serverSocket);
