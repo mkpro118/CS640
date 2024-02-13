@@ -1,4 +1,13 @@
 c0 rm -fr *_LOGS
+h1 pkill java
+h2 pkill java
+h3 pkill java
+h4 pkill java
+h5 pkill java
+h7 pkill java
+h8 pkill java
+h9 pkill java
+h10 pkill java
 c0 echo -e '\nStarting Multiplexing Tests\n'
 
 c0 echo 'Starting Latency tests'
@@ -69,7 +78,7 @@ c0 echo -e '\n3 Pair Iperfer\n' >> H9_SERVER_LOGS
 c0 echo -e '\n3 Pair Iperfer\n' > H10_SERVER_LOGS
 
 c0 echo -e -n '\nStarting additional server on h10... '
-h10 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5010 > H10_SERVER_LOGS &
+h10 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5010 >> H10_SERVER_LOGS &
 c0 echo 'Done!'
 
 c0 echo -e '\nRunning Tests: h4 -> h1  +  h9 -> h7  +  h10 -> h8 \n'
