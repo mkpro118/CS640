@@ -39,7 +39,6 @@ c0 echo -e '\nLatency Tests Finished!'
 
 c0 echo -e '\n2 Pair Iperfer\n' > H4_SERVER_LOGS
 c0 echo -e '\n2 Pair Iperfer\n' > H9_SERVER_LOGS
-c0 echo -e '\n2 Pair Iperfer\n' > H10_SERVER_LOGS
 
 c0 echo -e '\nStarting Throughput tests\n'
 c0 echo -e 'Booting up servers\n'
@@ -65,12 +64,12 @@ h7 wait; echo 'Client on h9 terminated'
 c0 echo -n 'Waiting for 5 seconds for servers to flush output '
 c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 5
 
-c0 echo -e '\n3 Pair Iperfer\n' >> H4_LOGS
-c0 echo -e '\n3 Pair Iperfer\n' >> H9_LOGS
-c0 echo -e '\n3 Pair Iperfer\n' >> H10_LOGS
+c0 echo -e '\n3 Pair Iperfer\n' >> H4_SERVER_LOGS
+c0 echo -e '\n3 Pair Iperfer\n' >> H9_SERVER_LOGS
+c0 echo -e '\n3 Pair Iperfer\n' > H10_SERVER_LOGS
 
 c0 echo -e -n '\nStarting additional server on h10... '
-h10 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5010 > H10_LOGS &
+h10 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5010 > H10_SERVER_LOGS &
 c0 echo 'Done!'
 
 c0 echo -e '\nRunning Tests: h4 -> h1  +  h9 -> h7  +  h10 -> h8 \n'

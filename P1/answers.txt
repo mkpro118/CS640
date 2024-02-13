@@ -17,3 +17,5 @@ Q3.
 
     Actual Latency three pairs of hosts: 161.096 ms, 161.566 ms
     Actual Throughput three pairs of hosts: 15.816 Mbps, 9.856 Mbps
+
+Q4. 
