@@ -7,8 +7,8 @@ h5 ping 10.0.0.6 -c 20 -q > latency_h5-h6.txt &
 h5 echo 'pinging h6 from h5'
 
 c0 echo -e '\nWaiting for hosts to finish\n'
-h5 wait $(jobs -p); echo 'h5 done!'
 h1 wait $(jobs -p); echo 'h1 done!'
+h5 wait $(jobs -p); echo 'h5 done!'
 
 c0 echo -e 'Booting up Iperfer servers...\n'
 h5 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5001 &
