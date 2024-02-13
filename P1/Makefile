@@ -31,7 +31,7 @@ server: all
 client: all
 	$(JV) $(JVFLAGS) $(IPERFER) $(IPERFER_CLIENT_ARGS)
 
-clean:
+clean: mn_clean
 	rm -fr $(TARGET_DIR)/*.class
 	rm -fr latency*
 	rm -fr throughput*
