@@ -53,6 +53,9 @@ q3: all mn_clean
 q3_alt: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q3_alt
 
+q3_tp: all mn_clean
+	sudo $(PY) $(MN_SCRIPT) q3_tp
+
 q4: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q4
 

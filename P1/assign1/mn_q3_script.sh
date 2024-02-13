@@ -7,8 +7,8 @@ c0 echo -e '\n2 Pair Ping\n' > H4_LOGS
 c0 echo -e '\n2 Pair Ping\n' > H9_LOGS
 
 c0 echo -e 'Running Tests: h4 -> h1  +  h9 -> h7 \n'
-h4 ping 10.0.0.1 -c 20 -q >> H4_LOGS &
-h9 ping 10.0.0.7 -c 20 -q >> H9_LOGS &
+h4 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh ping 10.0.0.1 -c 20 -q >> H4_LOGS &
+h9 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh ping 10.0.0.7 -c 20 -q >> H9_LOGS &
 h4 echo 'Ping started on h4'
 h9 echo 'Ping started on h9'
 
@@ -76,7 +76,7 @@ h9 echo 'Started client on h9'
 h10 echo 'Started client on h10'
 
 c0 echo -e -n '\nWaiting for tests to complete'
-h1 /home/mininet/Private/CS640/P1/prog_dots.sh wait; echo '\nClient on h1 terminated!'
+h1 wait; echo '\nClient on h1 terminated!'
 h7 wait; echo 'Client on h7 terminated!'
 h8 wait; echo 'Client on h8 terminated!'
 
@@ -84,7 +84,7 @@ c0 echo -e '\nThroughput Tests Finished!'
 c0 echo -e '\nMultiplexing Tests Complete!'
 
 c0 echo -n 'Waiting for 10 seconds for servers to flush output '
-c0 /home/mininet/Private/CS640/P1/prog_dots.sh sleep 10
+c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 10
 
 h4 pkill -INT java
 h9 pkill -INT java
