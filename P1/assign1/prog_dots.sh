@@ -7,4 +7,4 @@ while kill -0 $!; do
     sleep 2
 done
 
-printf '\n' > /dev/tty
+echo -e '\n'

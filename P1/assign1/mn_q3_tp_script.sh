@@ -40,7 +40,7 @@ c0 echo -e '\nThroughput Tests Finished!'
 c0 echo -e '\nMultiplexing Tests Complete!'
 
 c0 echo -n 'Waiting for 10 seconds for servers to flush output '
-c0 /home/mininet/Private/CS640/P1/prog_dots.sh sleep 10
+c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 10
 
 h4 pkill -INT java
 h9 pkill -INT java
