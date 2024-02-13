@@ -7,15 +7,26 @@ Q2.
 
 Q3.
     Expected Latency two pairs of hosts: ~160ms (We don't expect latency to change with additional hosts)
-    Expected Throughput two pairs of hosts: We cannot predict individual throughputs, but we expect the both throughputs to be below 20 Mbps
+    Expected Throughput two pairs of hosts: We cannot predict individual throughputs, but we expect the sum of both throughputs to be ~20 Mbps
 
     Actual Latency two pairs of hosts: 161.096 ms, 161.566 ms
-    Actual Throughput two pairs of hosts: 15.816 Mbps, 9.856 Mbps
+    Actual Throughput two pairs of hosts: 6.99 Mbps, 12.23 Mbps
 
     Expected Latency three pairs of hosts: ~160ms (We don't expect latency to change with additional hosts)
-    Expected Throughput three pairs of hosts: We cannot predict individual throughputs, but we expect the both throughputs to be below 20 Mbps
+    Expected Throughput three pairs of hosts: We cannot predict individual throughputs, but we expect the sum of the three throughputs to be ~20 Mbps
 
-    Actual Latency three pairs of hosts: 161.096 ms, 161.566 ms
-    Actual Throughput three pairs of hosts: 15.816 Mbps, 9.856 Mbps
+    Actual Latency three pairs of hosts: 160.459 ms, 160.582 ms, 161.322 ms
+    Actual Throughput three pairs of hosts: 8.94 Mbps, 5.48 Mbps, 4.62 Mbps
 
-Q4. 
+Q4.
+    Expected Latency h1-h4: ~160ms (We don't expect latency to change with additional hosts)
+    Expected Throughput h1-h4: ~20 Mbps (The 40Mbps link L2 will be shared by the two connections)
+
+    Expected Latency h5-h6: ~40ms (We don't expect latency to change with additional hosts)
+    Expected Throughput h5-h6: ~20 Mbps (The 40Mbps link L2 will be shared by the two connections)
+
+    Actual Latency h1-h4: 161.920 ms
+    Actual Throughput h1-h4: 22.446 Mbps
+
+    Actual Latency h5-h6: 41.383 ms
+    Actual Throughput h5-h6: 21.73 Mbps
