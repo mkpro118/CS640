@@ -39,6 +39,8 @@ h8 wait; echo 'Client on h8 terminated!'
 c0 echo -e '\nThroughput Tests Finished!'
 c0 echo -e '\nMultiplexing Tests Complete!'
 
+c0 sleep 10
+
 h4 pkill -INT java
 h9 pkill -INT java
 h10 pkill -INT java
