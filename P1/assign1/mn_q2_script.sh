@@ -51,7 +51,7 @@ h6 echo -e 'Done!\n'
 c0 echo -n 'Waiting for 5 seconds for servers to flush output '
 c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 5
 
-c0 echo -n '\nStopping servers... '
+c0 echo -n -e '\nStopping servers... '
 h2 pkill -INT java
 h3 pkill -INT java
 c0 echo -e 'Done!\n'
@@ -71,7 +71,7 @@ c0 echo -e ' Done!\n'
 c0 echo -n 'Waiting for 5 seconds for servers to flush output '
 c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 5
 
-c0 echo -n '\nStopping server on h1... '
+c0 echo -n -e '\nStopping server on h1... '
 h1 pkill -INT java
 c0 echo -e 'Done\n'
 h1 wait $(jobs -p)
