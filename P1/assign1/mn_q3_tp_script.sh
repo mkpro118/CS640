@@ -1,8 +1,8 @@
 c0 echo -e '\nStarting Throughput tests\n'
 c0 echo -e 'Booting up servers\n'
 
-h4 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5004 >> H4_LOGS &
-h9 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5009 >> H9_LOGS &
+h4 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5004 > H4_LOGS &
+h9 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5009 > H9_LOGS &
 
 h4 echo 'Server on h4 is up!'
 h9 echo 'Server on h9 is up!'
@@ -18,10 +18,6 @@ h7 echo 'Started client on h9'
 c0 echo -e '\nWaiting for tests to complete'
 h1 wait; echo 'Client on h4 terminated'
 h7 wait; echo 'Client on h9 terminated'
-
-c0 echo -e '\n3 Pair Iperfer\n' >> H4_LOGS
-c0 echo -e '\n3 Pair Iperfer\n' >> H9_LOGS
-c0 echo -e '\n3 Pair Iperfer\n' >> H10_LOGS
 
 c0 echo -e -n '\nStarting additional server on h10... '
 h10 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5010 > H10_LOGS &
