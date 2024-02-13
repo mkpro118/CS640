@@ -36,6 +36,7 @@ clean: mn_clean
 	rm -fr latency*
 	rm -fr throughput*
 	rm -fr MP*
+	rm -fr *_LOGS
 
 mn_clean:
 	sudo mn -c
