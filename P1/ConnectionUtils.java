@@ -31,7 +31,6 @@ public class ConnectionUtils {
     public final static Socket createSocket(ClientConfig config) {
         try {
             Socket socket = new Socket();
-            socket.setSendBufferSize(Constants.CHUNK_SIZE.getValue());
             socket.connect(new InetSocketAddress(config.hostname(),
                                                  config.serverPort()));
             return socket;
