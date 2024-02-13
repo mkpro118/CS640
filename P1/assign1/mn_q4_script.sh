@@ -1,5 +1,14 @@
 c0 rm -fr latency_h*
 c0 rm -fr throughput_h*
+h1 pkill java
+h2 pkill java
+h3 pkill java
+h4 pkill java
+h5 pkill java
+h7 pkill java
+h8 pkill java
+h9 pkill java
+h10 pkill java
 
 h1 ping 10.0.0.4 -c 20 -q > latency_h1-h4.txt &
 h1 echo 'pinging h4 from h1'
