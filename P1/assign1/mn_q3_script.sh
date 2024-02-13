@@ -83,8 +83,8 @@ h4 echo 'Started client on h4'
 h9 echo 'Started client on h9'
 h10 echo 'Started client on h10'
 
-c0 echo -e -n '\nWaiting for tests to complete'
-h1 wait; echo '\nClient on h1 terminated!'
+c0 echo -e '\nWaiting for tests to complete'
+h1 wait; echo 'Client on h1 terminated!'
 h7 wait; echo 'Client on h7 terminated!'
 h8 wait; echo 'Client on h8 terminated!'
 
