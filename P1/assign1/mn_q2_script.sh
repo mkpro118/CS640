@@ -74,6 +74,5 @@ c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 5
 c0 echo -n -e '\nStopping server on h1... '
 h1 pkill -INT java
 c0 echo -e 'Done\n'
-h1 wait $(jobs -p)
 
 c0 echo -e 'Link Latency and Throughput tests finished!\n'
