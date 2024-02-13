@@ -6,9 +6,9 @@ h1 ping 10.0.0.2 -c 20 > latency_L1.txt &
 h1 echo 'Pinging h2 from h1 '
 h3 ping 10.0.0.2 -c 20 > latency_L2.txt &
 h3 echo 'Pinging h2 from h3 '
-h4 ping 10.0.0.2 -c 20 > latency_L3.txt &
+h4 ping 10.0.0.3 -c 20 > latency_L3.txt &
 h4 echo 'Pinging h2 from h4 '
-h5 ping 10.0.0.3 -c 20 > latency_L4.txt &
+h5 ping 10.0.0.2 -c 20 > latency_L4.txt &
 h5 echo 'Pinging h3 from h5 '
 h6 ping 10.0.0.3 -c 20 > latency_L5.txt &
 h6 echo 'Pinging h3 from h6 '
