@@ -55,7 +55,7 @@ c0 echo -e 'Done!\n'
 
 c0 echo -e 'Running H1 to H4 latency and throughput tests\n'
 c0 echo -e 'Pinging h4 from h1 \n'
-h1 ping 10.0.0.4 -c 20 > latency_Q2.txt &
+h1 ping 10.0.0.4 -c 20 > latency_Q2.txt
 
 c0 echo -n 'Starting up Iperfer server on h1... '
 h1 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5001 &
