@@ -48,9 +48,12 @@ h6 echo -n 'Running Iperfer client on link 5'
 h6 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.3 -p 5002 -t 20 > throughput_L5.txt
 h6 echo -e 'Done!\n'
 
-c0 echo -n 'Stopping servers... '
-h2 pkill java
-h3 pkill java
+c0 echo -n 'Waiting for 5 seconds for servers to flush output '
+c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 5
+
+c0 echo -n '\nStopping servers... '
+h2 pkill -INT java
+h3 pkill -INT java
 c0 echo -e 'Done!\n'
 
 c0 echo -e 'Running H1 to H4 latency and throughput tests\n'
@@ -65,8 +68,11 @@ c0 echo -n 'Running Iperfer client on h4'
 h4 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -c -h 10.0.0.1 -p 5001 -t 20 > throughput_Q2.txt
 c0 echo -e ' Done!\n'
 
-c0 echo -n 'Stopping server on h1... '
-h1 pkill java
+c0 echo -n 'Waiting for 5 seconds for servers to flush output '
+c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 5
+
+c0 echo -n '\nStopping server on h1... '
+h1 pkill -INT java
 c0 echo -e 'Done\n'
 h1 wait $(jobs -p)
 
