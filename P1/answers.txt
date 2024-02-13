@@ -1,2 +1,19 @@
-Q2. Expected Latency = 185 ms, Expected Throughput = 23 Mbps
-Q3. Expected Latency = 
+Q2.
+    Expected Latency: 80ms + 20ms + 60ms = 160ms
+    Expected Throughput: < min(22.6 Mbps, 37.7 Mbps, 32.1 Mbps) = ~ 22.5 Mbps
+
+    Actual Latency: 161.842 ms
+    Actual Throughput: 22.7036 Mbps
+
+Q3.
+    Expected Latency two pairs of hosts: ~160ms (We don't expect latency to change with additional hosts)
+    Expected Throughput two pairs of hosts: We cannot predict individual throughputs, but we expect the both throughputs to be below 20 Mbps
+
+    Actual Latency two pairs of hosts: 161.096 ms, 161.566 ms
+    Actual Throughput two pairs of hosts: 15.816 Mbps, 9.856 Mbps
+
+    Expected Latency three pairs of hosts: ~160ms (We don't expect latency to change with additional hosts)
+    Expected Throughput three pairs of hosts: We cannot predict individual throughputs, but we expect the both throughputs to be below 20 Mbps
+
+    Actual Latency three pairs of hosts: 161.096 ms, 161.566 ms
+    Actual Throughput three pairs of hosts: 15.816 Mbps, 9.856 Mbps

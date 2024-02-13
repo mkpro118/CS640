@@ -31,8 +31,8 @@ c0 echo -e '\nStarting Throughput tests\n'
 c0 echo -e 'Booting up servers\n'
 
 h1 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5001 > H1_LOGS_1 &
-h7 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5007 > H1_LOGS_1 &
-h8 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5008 > H!_LOGS_1 &
+h7 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5007 > H2_LOGS_1 &
+h8 java -cp /home/mininet/Private/CS640/P1/bin/ Iperfer -s -p 5008 > H3_LOGS_1 &
 h1 echo 'Server on h1 is up!'
 h7 echo 'Server on h7 is up!'
 h8 echo 'Server on h8 is up!'
