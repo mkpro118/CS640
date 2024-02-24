@@ -13,6 +13,9 @@ import net.floodlightcontroller.packet.IPv4;
 
 import edu.wisc.cs.sdn.vnet.Iface;
 
+import static java.lang.Byte.MIN_VALUE;
+import static java.lang.Integer.bitCount;
+
 /**
  * Route table for a router.
  * @author Aaron Gember-Jacobson
@@ -42,17 +45,17 @@ public class RouteTable
 			
             RouteEntry bestEntry = null;
 
-            int longestPrefix = MIN_VALUE;
+            byte longestPrefix = MIN_VALUE;
+            byte prefixLength;
             int subnetNumber;
             int subnetMask;
-            int prefixLength;
 
             for (RouteEntry entry: entries) {
                 subnetMask = entry.getMaskAddress();
                 subnetNumber = entry.getDestinationAddress() & subnetMask;
 
                 if ((ip & subnetMask) == (subnetNumber)) {
-                    if ((prefixLength = bitCount(subnetMask)) == 32) {
+                    if ((prefixLength = ((byte) bitCount(subnetMask))) == 32) {
                         return entry;
                     }
 
