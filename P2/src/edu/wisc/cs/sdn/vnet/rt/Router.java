@@ -5,6 +5,10 @@ import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 
 import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.MACAddress;
+
+import static net.floodlightcontroller.packet.Ethernet.TYPE_IPv4;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -73,10 +77,10 @@ public class Router extends Device
 	}
 
 	/**
-	 * Handle an Ethernet packet received on a specific interface.
-	 * @param etherPacket the Ethernet packet that was received
-	 * @param inIface the interface on which the packet was received
-	 */
+     * Handle an Ethernet packet received on a specific interface.
+     * @param etherPacket the Ethernet packet that was received
+     * @param inIface the interface on which the packet was received
+     */
 	public void handlePacket(Ethernet etherPacket, Iface inIface)
 	{
 		System.out.println("*** -> Received packet: " +
@@ -84,8 +88,50 @@ public class Router extends Device
 		
 		/********************************************************************/
 		/* TODO: Handle packets                                             */
-		
+
+        // Check if packet if of type IPv4
+        if (TYPE_IPv4 != etherPacket.getEtherType())
+            return;
+
+        // Get frame's payload
+        IPv4 packet = (IPv4) etherPacket.getPayload();
+
+        // Verify packet's checksum, if invalid, drop it
+        if (!isChecksumValid(packet))
+            return;
+
+        // Check pre-decrement TTL, if not greater than 1, drop it
+        if (packet.getTtl() <= 1)
+            return;
+
+        // Decrement TTL
+        packet.setTtl(packet.getTtl() - 1);
+
+        // If packet was meant for router, drop it
+        if (isPacketForRouter(packet))
+            return;
+
+        RouteEntry entry;
+        // If no matching entry, drop the packet
+        if (null == (entry = routeTable.lookup(packet.getDestinationAddress())))
+            return;
+
+        ArpEntry arpEntry;
+        // If no matching entry, drop the packet
+        if(null == (arpEntry = arpCache.lookup(entry.getDestinationAddress())))
+            return;
+
+
+
 		
 		/********************************************************************/
 	}
+
+    private boolean isChecksumValid(IPv4 packet) {
+        return false;
+    }
+
+    private boolean isPacketForRouter(IPv4 packet) {
+        return false;
+    }
 }
