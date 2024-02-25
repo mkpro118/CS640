@@ -58,27 +58,33 @@ public class RouteTable
             // Subnet mask of the current entry
             int subnetMask;
 
-            // Entries is a LinkedList, cannot perform multithreaded search
-
-            // So..., linear search
-            for (RouteEntry entry: entries) {
+            // We attempt to perform a parallel search
+            entries.parallelStream()
+                   .unordered()
+                   .takeWhile(entry -> {
                 subnetMask = entry.getMaskAddress();
                 subnetNumber = entry.getDestinationAddress() & subnetMask;
 
                 if ((ip & subnetMask) == subnetNumber) {
-                	// Longest prefix possible is 32, if found, stop searching
+                    // Longest prefix possible is 32, if found, stop searching
                     if ((prefixLength = ((byte) bitCount(subnetMask))) == 32) {
-                        return entry;
+                    	synchronized (bestEntry) {
+                    		bestEntry = entry;
+                    	}
+                        return false;
                     }
 
                     // Update longestPrefix and bestEntry if
                     // the current entry is more specific
-                    if (prefixLength > longestPrefix) {
-                        longestPrefix = prefixLength;
-                        bestEntry = entry;
+                	synchronized (bestEntry) {
+                    	if (prefixLength > longestPrefix) {
+	                        longestPrefix = prefixLength;
+	                        bestEntry = entry;
+                    	}
                     }
                 }
-            }
+                return true;
+            });
 
             return bestEntry;
 			
