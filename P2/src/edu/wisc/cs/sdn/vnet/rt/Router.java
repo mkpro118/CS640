@@ -87,7 +87,7 @@ public class Router extends Device
 				etherPacket.toString().replace("\n", "\n\t"));
 		
 		/********************************************************************/
-		/* TODO: Handle packets                                             */
+		/* Handle packets                                             */
 
         // Check if packet if of type IPv4
         if (TYPE_IPv4 != etherPacket.getEtherType())
@@ -116,22 +116,77 @@ public class Router extends Device
         if (null == (entry = routeTable.lookup(packet.getDestinationAddress())))
             return;
 
-        ArpEntry arpEntry;
-        // If no matching entry, drop the packet
-        if(null == (arpEntry = arpCache.lookup(entry.getDestinationAddress())))
+        Iface outIface;
+        // If destination is on the incoming interface, there might be a loop.
+        // Drop the packet
+        if ((outIface = entry.getInterface()) == inIface)
             return;
 
+        // Get next hop's ip address. If it's zero, next hop is the destination
+        int next;
+        if ((next = entry.getGatewayAddress()) == 0)
+            next = packet.getDestinationAddress();
 
+        ArpEntry destEntry;
+        // If no matching entry, drop the packet
+        if(null == (destEntry = arpCache.lookup(entry.getDestinationAddress())))
+            return;
 
+        // Set source MAC to the router's out interface's MAC
+        etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
+        // Set destination MAC to the destination's MAC
+        etherPacket.setDestinationMACAddress(destEntry.getMac().toBytes());
+
+        // Send the packet on the out interface
+        sendPacket(etherPacket, outIface);
 		
 		/********************************************************************/
 	}
 
+    /**
+     * @author Mrigank Kumar
+     *
+     * Validate the checksum on the given IP packet
+     *
+     * @param  packet The IP packet to validate checksum for
+     *
+     * @return true if checksum is correct, false otherwise
+     */
     private boolean isChecksumValid(IPv4 packet) {
-        return false;
+        // Original checksum
+        short checksum = packet.getChecksum();
+
+        // Set packet.checksum to 0 because packet.serialize() recomputes the
+        // checksum over the header if the checksum field is set to zero
+        packet.resetChecksum();
+
+        // The following call will update packet.checksum,
+        // which can then be retrieved with packet.getChecksum()
+        packet.serialize();
+
+        // Check whether the original checksum equals the recomputed checksum
+        return checksum == packet.getChecksum();
     }
 
+    /**
+     * Check if the IP packet's destination address is one of the router's
+     * interfaces
+     * If so, the router will drop the packet
+     *
+     * @param  packet The packet to check
+     * @return true if the packet's destination address is one of the router's
+     *         interfaces, false otherwise
+     */
     private boolean isPacketForRouter(IPv4 packet) {
-        return false;
+        // IP packet's destination IP address
+        int dest = packet.getDestinationAddress();
+
+        // Evaluates to true if any of the router's interfaces' IP address
+        // matches the destination IP address
+        return packet.interfaces        // interfaces is a Map<String, Iface>
+                     .values()          // We only consider the Iface values
+                     .parallelStream()  // Try to process in parallel
+                     .unordered()       // Order doesn't matter
+                     .anyMatch(iface -> dest == iface.getIpAddress());
     }
 }
