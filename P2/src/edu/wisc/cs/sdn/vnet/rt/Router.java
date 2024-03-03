@@ -105,7 +105,7 @@ public class Router extends Device
             return;
 
         // Decrement TTL
-        packet.setTtl(packet.getTtl() - ((byte) 1));
+        packet.setTtl((byte) (packet.getTtl() - 1));
 
         // If packet was meant for router, drop it
         if (isPacketForRouter(packet))
