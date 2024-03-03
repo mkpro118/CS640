@@ -54,6 +54,8 @@ public class Switch extends Device
         interfaces
         .values()
         .parallelStream()
+        .filter(e -> e != null)
+        .filter(e -> !e.getName().equals(inIface.getName()))
         .forEach(iface -> sendPacket(etherPacket, iface));
 		
 		/********************************************************************/
