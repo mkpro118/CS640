@@ -16,7 +16,7 @@ import net.floodlightcontroller.packet.IPv4;
 
 import edu.wisc.cs.sdn.vnet.Iface;
 
-import static java.lang.Byte.MIN_VALUE;
+import static java.lang.Integer.MIN_VALUE;
 import static java.lang.Integer.bitCount;
 
 /**
@@ -47,13 +47,17 @@ public class RouteTable
 			/* Find the route entry with the longest prefix match	  */
 			
             // Track the most specific entry so far
-            AtomicReference<RouteEntry> bestEntry = new AtomicReference<>();
+            var bestEntry = new Object(){
+            	public RouteEntry entry = null;
 
-            // Length of the longest prefix so far
-            AtomicReference<Byte> longestPrefix = new AtomicReference<>(MIN_VALUE);
+	            // Length of the longest prefix so far
+            	public int prefixLength = MIN_VALUE;
+            };
+
             System.out.println("Looking for IP: " + ip);
 
 
+            try {
             // We attempt to perform a parallel search
             entries.parallelStream()
                    .unordered()
@@ -67,25 +71,26 @@ public class RouteTable
                 System.out.println("Checking SN: " + subnetNumber + " SM: " + subnetMask);
 
                 // Length of the current prefix
-                byte prefixLength;
+                int prefixLength;
 
                 if ((ip & subnetMask) == subnetNumber) {
                     // Longest prefix possible is 32, if found, stop searching
-                    if ((prefixLength = ((byte) bitCount(subnetMask))) == 32) {
-                        bestEntry.set(entry);
-                        return;
+                    if ((prefixLength = bitCount(subnetMask)) == 32) {
+                        bestEntry.entry = entry;
+                        throw new RuntimeException();
                     }
 
                     // Update longestPrefix and bestEntry if
                     // the current entry is more specific
-                    if (prefixLength > longestPrefix.get()) {
-                        longestPrefix.set(prefixLength);
-                        bestEntry.set(entry);
+                    if (prefixLength > bestEntry.prefixLength) {
+                        bestEntry.prefixLength = prefixLength;
+                        bestEntry.entry = entry;
                     }
                 }
             });
+            } catch (RuntimeException unused) {}
 
-            return bestEntry.get();	
+            return bestEntry.entry;
 			/*****************************************************************/
 		}
 	}
