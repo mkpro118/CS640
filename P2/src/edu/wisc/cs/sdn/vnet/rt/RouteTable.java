@@ -13,6 +13,9 @@ import net.floodlightcontroller.packet.IPv4;
 
 import edu.wisc.cs.sdn.vnet.Iface;
 
+import static java.lang.Byte.MIN_VALUE;
+import static java.lang.Integer.bitCount;
+
 /**
  * Route table for a router.
  * @author Aaron Gember-Jacobson
@@ -38,9 +41,52 @@ public class RouteTable
 		synchronized(this.entries)
 		{
 			/*****************************************************************/
-			/* TODO: Find the route entry with the longest prefix match	  */
+			/* Find the route entry with the longest prefix match	  */
 			
-			return null;
+            // Track the most specific entry so far
+            RouteEntry bestEntry = null;
+
+            // Length of the longest prefix so far
+            byte longestPrefix = MIN_VALUE;
+
+            // Length of the current prefix
+            byte prefixLength;
+
+            // Subnet Number of the current entry
+            int subnetNumber;
+
+            // Subnet mask of the current entry
+            int subnetMask;
+
+            // We attempt to perform a parallel search
+            entries.parallelStream()
+                   .unordered()
+                   .takeWhile(entry -> {
+                subnetMask = entry.getMaskAddress();
+                subnetNumber = entry.getDestinationAddress() & subnetMask;
+
+                if ((ip & subnetMask) == subnetNumber) {
+                    // Longest prefix possible is 32, if found, stop searching
+                    if ((prefixLength = ((byte) bitCount(subnetMask))) == 32) {
+                    	synchronized (bestEntry) {
+                    		bestEntry = entry;
+                    	}
+                        return false;
+                    }
+
+                    // Update longestPrefix and bestEntry if
+                    // the current entry is more specific
+                	synchronized (bestEntry) {
+                    	if (prefixLength > longestPrefix) {
+	                        longestPrefix = prefixLength;
+	                        bestEntry = entry;
+                    	}
+                    }
+                }
+                return true;
+            });
+
+            return bestEntry;
 			
 			/*****************************************************************/
 		}
