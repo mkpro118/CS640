@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Switch extends Device
 {	
-    private TimeoutMap<MACAddress, IPv4> cache;
+    private TimeoutMap<MACAddress, Iface> cache;
 	/**
 	 * Creates a router for a specific host.
 	 * @param host hostname for the router
@@ -40,9 +40,9 @@ public class Switch extends Device
         MACAddress srcMAC = etherPacket.getSourceMAC();
         MACAddress destMAC = etherPacket.getSourceMAC();
 
-        cache.put(srcMAC, inIface);
+        cache.putTimed(srcMAC, inIface);
 
-        Iface outIface = cache.get(destMAC);
+        Iface outIface = cache.getTimed(destMAC);
 
         // If dest Iface exists in cache, send it there
         if (outIface != null) {
@@ -52,6 +52,7 @@ public class Switch extends Device
 
         // Flood the packet otherwise
         interfaces
+        .values()
         .parallelStream()
         .forEach(iface -> sendPacket(etherPacket, iface));
 		
