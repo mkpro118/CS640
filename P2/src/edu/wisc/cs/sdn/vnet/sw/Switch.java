@@ -38,7 +38,7 @@ public class Switch extends Device
 		/* TODO: Handle packets                                             */
 
         MACAddress srcMAC = etherPacket.getSourceMAC();
-        MACAddress destMAC = etherPacket.getSourceMAC();
+        MACAddress destMAC = etherPacket.getDestinationMAC();
 
         cache.putTimed(srcMAC, inIface);
 
