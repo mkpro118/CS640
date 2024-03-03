@@ -57,7 +57,7 @@ public class RouteTable
             // We attempt to perform a parallel search
             entries.parallelStream()
                    .unordered()
-                   .takeWhile(entry -> {
+                   .forEach(entry -> {
                	// Subnet Number of the current entry
                 int subnetMask = entry.getMaskAddress();
 
@@ -73,7 +73,7 @@ public class RouteTable
                     // Longest prefix possible is 32, if found, stop searching
                     if ((prefixLength = ((byte) bitCount(subnetMask))) == 32) {
                         bestEntry.set(entry);
-                        return false;
+                        return;
                     }
 
                     // Update longestPrefix and bestEntry if
@@ -83,8 +83,7 @@ public class RouteTable
                         bestEntry.set(entry);
                     }
                 }
-                return true;
-            }).reduce((x, y) -> null);
+            });
 
             return bestEntry.get();	
 			/*****************************************************************/
