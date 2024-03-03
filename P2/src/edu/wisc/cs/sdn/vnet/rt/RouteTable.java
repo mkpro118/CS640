@@ -8,6 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.floodlightcontroller.packet.IPv4;
 
@@ -44,32 +46,30 @@ public class RouteTable
 			/* Find the route entry with the longest prefix match	  */
 			
             // Track the most specific entry so far
-            RouteEntry bestEntry = null;
+            AtomicReference<RouteEntry> bestEntry = new AtomicReference<>();
 
             // Length of the longest prefix so far
-            byte longestPrefix = MIN_VALUE;
+            AtomicReference<Byte> longestPrefix = new AtomicReference<>(MIN_VALUE);
 
-            // Length of the current prefix
-            byte prefixLength;
-
-            // Subnet Number of the current entry
-            int subnetNumber;
-
-            // Subnet mask of the current entry
-            int subnetMask;
 
             // We attempt to perform a parallel search
             entries.parallelStream()
                    .unordered()
                    .takeWhile(entry -> {
-                subnetMask = entry.getMaskAddress();
-                subnetNumber = entry.getDestinationAddress() & subnetMask;
+               	// Subnet Number of the current entry
+                int subnetMask = entry.getMaskAddress();
+
+                // Subnet mask of the current entry
+                int subnetNumber = entry.getDestinationAddress() & subnetMask;
+
+	            // Length of the current prefix
+    	        byte prefixLength;
 
                 if ((ip & subnetMask) == subnetNumber) {
                     // Longest prefix possible is 32, if found, stop searching
                     if ((prefixLength = ((byte) bitCount(subnetMask))) == 32) {
                     	synchronized (bestEntry) {
-                    		bestEntry = entry;
+                    		bestEntry.set(entry);
                     	}
                         return false;
                     }
@@ -77,17 +77,16 @@ public class RouteTable
                     // Update longestPrefix and bestEntry if
                     // the current entry is more specific
                 	synchronized (bestEntry) {
-                    	if (prefixLength > longestPrefix) {
-	                        longestPrefix = prefixLength;
-	                        bestEntry = entry;
+                    	if (prefixLength > longestPrefix.get()) {
+	                        longestPrefix.set(prefixLength);
+	                        bestEntry.set(entry);
                     	}
                     }
                 }
                 return true;
             });
 
-            return bestEntry;
-			
+            return bestEntry.get();	
 			/*****************************************************************/
 		}
 	}
