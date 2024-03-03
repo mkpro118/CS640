@@ -2,12 +2,10 @@ package edu.wisc.cs.sdn.vnet.sw;
 
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.MACAddress;
-import net.floodlightcontroller.packet.IPv4;
 import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -23,7 +21,7 @@ public class Switch extends Device
 	public Switch(String host, DumpFile logfile)
 	{
 		super(host,logfile);
-        cache = new TimeoutMap<MACAddress, IPv4>(15000L, 1000L);
+        cache = new TimeoutMap<MACAddress, Iface>(15000L, 1000L);
 	}
 
 	/**
@@ -39,7 +37,23 @@ public class Switch extends Device
 		/********************************************************************/
 		/* TODO: Handle packets                                             */
 
+        MACAddress srcMAC = etherPacket.getSourceMAC();
+        MACAddress destMAC = etherPacket.getSourceMAC();
 
+        cache.put(srcMAC, inIface);
+
+        Iface outIface = cache.get(destMAC);
+
+        // If dest Iface exists in cache, send it there
+        if (outIface != null) {
+            sendPacket(etherPacket, outIface);
+            return;
+        }
+
+        // Flood the packet otherwise
+        interfaces
+        .parallelStream()
+        .forEach(iface -> sendPacket(etherPacket, iface));
 		
 		/********************************************************************/
 	}
