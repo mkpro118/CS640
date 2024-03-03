@@ -50,6 +50,7 @@ public class RouteTable
 
             // Length of the longest prefix so far
             AtomicReference<Byte> longestPrefix = new AtomicReference<>(MIN_VALUE);
+            System.out.println("Looking for IP: " + ip);
 
 
             // We attempt to perform a parallel search
@@ -62,25 +63,23 @@ public class RouteTable
                 // Subnet mask of the current entry
                 int subnetNumber = entry.getDestinationAddress() & subnetMask;
 
-	            // Length of the current prefix
-    	        byte prefixLength;
+                System.out.println("Checking SN: " + subnetNumber + " SM: " + subnetMask);
+
+                // Length of the current prefix
+                byte prefixLength;
 
                 if ((ip & subnetMask) == subnetNumber) {
                     // Longest prefix possible is 32, if found, stop searching
                     if ((prefixLength = ((byte) bitCount(subnetMask))) == 32) {
-                    	synchronized (bestEntry) {
-                    		bestEntry.set(entry);
-                    	}
+                        bestEntry.set(entry);
                         return false;
                     }
 
                     // Update longestPrefix and bestEntry if
                     // the current entry is more specific
-                	synchronized (bestEntry) {
-                    	if (prefixLength > longestPrefix.get()) {
-	                        longestPrefix.set(prefixLength);
-	                        bestEntry.set(entry);
-                    	}
+                    if (prefixLength > longestPrefix.get()) {
+                        longestPrefix.set(prefixLength);
+                        bestEntry.set(entry);
                     }
                 }
                 return true;
