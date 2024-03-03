@@ -90,37 +90,49 @@ public class Router extends Device
 		/* Handle packets                                             */
 
         // Check if packet if of type IPv4
-        if (TYPE_IPv4 != etherPacket.getEtherType())
+        if (TYPE_IPv4 != etherPacket.getEtherType()) {
+            System.out.println("NOT IPv4,dropping");
             return;
+        }
 
         // Get frame's payload
         IPv4 packet = (IPv4) etherPacket.getPayload();
 
         // Verify packet's checksum, if invalid, drop it
-        if (!isChecksumValid(packet))
+        if (!isChecksumValid(packet)) {
+            System.out.println("checksum invalid, dropping");
             return;
+        }
 
         // Check pre-decrement TTL, if not greater than 1, drop it
-        if (packet.getTtl() <= 1)
+        if (packet.getTtl() <= 1) {
+            System.out.println("TTL expired, dropping");
             return;
+        }
 
         // Decrement TTL
         packet.setTtl((byte) (packet.getTtl() - 1));
 
         // If packet was meant for router, drop it
-        if (isPacketForRouter(packet))
+        if (isPacketForRouter(packet)) {
+            System.out.println("Packet is for router, dropping");
             return;
+        }
 
         RouteEntry entry;
         // If no matching entry, drop the packet
-        if (null == (entry = routeTable.lookup(packet.getDestinationAddress())))
+        if (null == (entry = routeTable.lookup(packet.getDestinationAddress()))) {
+            System.out.println("No RouteEntry, dropping");
             return;
+        }
 
         Iface outIface;
         // If destination is on the incoming interface, there might be a loop.
         // Drop the packet
-        if ((outIface = entry.getInterface()) == inIface)
+        if ((outIface = entry.getInterface()).getName.equals(inIface.getName())) {
+            System.out.println("Loop, dropping");
             return;
+        }
 
         // Get next hop's ip address. If it's zero, next hop is the destination
         int next;
@@ -129,8 +141,10 @@ public class Router extends Device
 
         ArpEntry destEntry;
         // If no matching entry, drop the packet
-        if(null == (destEntry = arpCache.lookup(entry.getDestinationAddress())))
+        if(null == (destEntry = arpCache.lookup(entry.getDestinationAddress()))) {
+            System.out.println("No matching ArpEntry, dropping");
             return;
+        }
 
         // Set source MAC to the router's out interface's MAC
         etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
@@ -138,6 +152,7 @@ public class Router extends Device
         etherPacket.setDestinationMACAddress(destEntry.getMac().toBytes());
 
         // Send the packet on the out interface
+        System.out.println("Sending packet on interface " + outIface);
         sendPacket(etherPacket, outIface);
 		
 		/********************************************************************/
