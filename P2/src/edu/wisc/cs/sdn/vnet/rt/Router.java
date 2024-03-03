@@ -105,7 +105,7 @@ public class Router extends Device
             return;
 
         // Decrement TTL
-        packet.setTtl(packet.getTtl() - 1);
+        packet.setTtl(packet.getTtl() - ((byte) 1));
 
         // If packet was meant for router, drop it
         if (isPacketForRouter(packet))
@@ -183,10 +183,10 @@ public class Router extends Device
 
         // Evaluates to true if any of the router's interfaces' IP address
         // matches the destination IP address
-        return packet.interfaces        // interfaces is a Map<String, Iface>
-                     .values()          // We only consider the Iface values
-                     .parallelStream()  // Try to process in parallel
-                     .unordered()       // Order doesn't matter
-                     .anyMatch(iface -> dest == iface.getIpAddress());
+        return interfaces        // interfaces is a Map<String, Iface>
+               .values()          // We only consider the Iface values
+               .parallelStream()  // Try to process in parallel
+               .unordered()       // Order doesn't matter
+               .anyMatch(iface -> dest == iface.getIpAddress());
     }
 }
