@@ -6,10 +6,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.floodlightcontroller.packet.IPv4;
 
@@ -83,7 +84,7 @@ public class RouteTable
                     }
                 }
                 return true;
-            }).collect();
+            }).reduce((x, y) -> null);
 
             return bestEntry.get();	
 			/*****************************************************************/
