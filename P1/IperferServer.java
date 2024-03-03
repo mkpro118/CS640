@@ -1,7 +1,8 @@
-import java.net.Socket;
 import java.net.ServerSocket;
 
 /**
+ * @author Arushi Mishra
+ *
  * This class represents the server side of the IPerfer network test
  * It extends the NetworkTest class and implements the logic for the
  * server functionality
@@ -12,9 +13,6 @@ public class IperferServer extends NetworkTest {
 
     // Output format
     private final static String serverFormat = "received=%d KB rate=%f Mbps\n";
-
-    // Server socket
-    private ServerSocket server;
 
     /**
      * Constructs an IperferServer object with the given server configuration
@@ -32,23 +30,19 @@ public class IperferServer extends NetworkTest {
      */
     @Override
     public void startSession() {
-        server = ConnectionUtils.createSocket(config);
+        // make a server socket
+        ServerSocket serverSocket = ConnectionUtils.createSocket(config);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            ConnectionUtils.closeSocket(server);
+            ConnectionUtils.closeSocket(serverSocket);
+            System.out.flush();
         }));
 
-        // Basic logging
-        System.out.printf("Listening for TCP connections on Port: %d\n",
-            config.listenPort());
-
-        do { // Serve Forever
-            System.out.println();
-            socket = ConnectionUtils.getClient(server);
+        // accept a socket connection forever
+        for(;;) {
+            socket = ConnectionUtils.getClient(serverSocket);
             startTest();
-            stopSession();
-            printSummary();
-        } while (true); // Serve Forever
+        }
     }
 
     /**
@@ -57,19 +51,26 @@ public class IperferServer extends NetworkTest {
      */
     @Override
     public void startTest() {
+        // keep track of the start time
         startTime = System.currentTimeMillis();
-
-        int bufSize = 0;
-
-
-        // reset totalBytes
+        int temp = 0;
         totalBytes = 0;
 
-        while (bufSize >= 0) {
-            totalBytes += bufSize;
-            bufSize = ConnectionUtils.receiveData(socket);
-        }
+        // keep receiving data until client connection is lost
+        do {
+            totalBytes += temp;
+        } while ((temp = ConnectionUtils.receiveData(socket)) != -1);
 
+        // keep track of the end time
         endTime = System.currentTimeMillis();
+
+        // close socket connection
+        stopSession();
+
+        // print stats
+        printSummary();
+
     }
+
 }
+

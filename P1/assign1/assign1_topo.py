@@ -10,6 +10,7 @@ from mininet.link import TCLink
 from mininet.topo import Topo
 from mininet.log import setLogLevel
 
+
 class AssignmentNetworks(Topo):
     def __init__(self, **opts):
         Topo.__init__(self, **opts)
@@ -44,18 +45,18 @@ class AssignmentNetworks(Topo):
         self.addLink(s3, s4, bw=30, delay='30ms')
         self.addLink(s2, s5, bw=25, delay='5ms')
         self.addLink(s3, s6, bw=25, delay='5ms')
-        
-        
+
+
 if __name__ == '__main__':
     import sys
     import os
 
-    setLogLevel( 'info' )
+    setLogLevel('info')
 
     # Create data network
     topo = AssignmentNetworks()
     net = Mininet(topo=topo, link=TCLink, autoSetMacs=True,
-           autoStaticArp=True)
+                  autoStaticArp=True)
 
     # Run network
     net.start()
@@ -66,6 +67,6 @@ if __name__ == '__main__':
             if os.path.exists(script_file) and os.path.isfile(script_file):
                 CLI(net, script=script_file)
     else:
-       CLI( net )
+        CLI(net)
     net.stop()
 

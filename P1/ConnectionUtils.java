@@ -31,7 +31,7 @@ public class ConnectionUtils {
     public final static Socket createSocket(ClientConfig config) {
         try {
             Socket socket = new Socket();
-
+            socket.setSendBufferSize(Constants.CHUNK_SIZE.getValue());
             socket.connect(new InetSocketAddress(config.hostname(),
                                                  config.serverPort()));
             return socket;
@@ -137,7 +137,7 @@ public class ConnectionUtils {
      *
      * @param socket the socket for receiving data
      *
-     * @return the size of the data recieved
+     * @return the size of the data received
      */
     public final static int receiveData(Socket socket) {
         try {

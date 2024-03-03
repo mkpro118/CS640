@@ -31,11 +31,12 @@ server: all
 client: all
 	$(JV) $(JVFLAGS) $(IPERFER) $(IPERFER_CLIENT_ARGS)
 
-clean:
+clean: mn_clean
 	rm -fr $(TARGET_DIR)/*.class
 	rm -fr latency*
 	rm -fr throughput*
 	rm -fr MP*
+	rm -fr *_LOGS
 
 mn_clean:
 	sudo mn -c
@@ -49,8 +50,15 @@ q2: all mn_clean
 q3: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q3
 
+q3_alt: all mn_clean
+	sudo $(PY) $(MN_SCRIPT) q3_alt
+
+q3_tp: all mn_clean
+	sudo $(PY) $(MN_SCRIPT) q3_tp
+
 q4: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q4
 
-qs: all
+qs: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q2 q3 q4
+
