@@ -27,33 +27,33 @@ public class TimedHashMap<K, V> extends ConcurrentHashMap<K, Value<V>> {
 
     public void timeout() {
         long currTime = System.currentTimeMillis();
-        for(Map.Entry<K, Value<V>> entry : entrySet()) {
-            if((currTime - entry.getValue().getLastUpdate()) > duration) {
-                remove(entry);
-            }
-        }
-    }
-
-    public static void main(String[] args) {
-
+        entrySet()
+        .parallelStream()
+        .filter(e -> currTime - e.getValue().getLastUpdate() > duration)
+        .forEach(e -> remove(e.getKey()));
     }
 }
 
-class Value<X> {
+class Value<T> {
     private long lastUpdated;
-    private X value;
+    private T value;
 
-    public Value(X value) {
+    public Value(T value) {
         lastUpdated = System.currentTimeMillis();
         this.value = value;
     }
 
-    public X getValue() {
+    public T getValue() {
         return this.value;
     }
 
     public long getLastUpdate() {
         return this.lastUpdated;
+    }
+
+    @Override
+    public String toString() {
+        return value != null ? value.toString() : null;
     }
 }
 
