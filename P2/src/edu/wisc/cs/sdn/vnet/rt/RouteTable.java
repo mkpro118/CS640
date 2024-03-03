@@ -83,7 +83,7 @@ public class RouteTable
                     }
                 }
                 return true;
-            });
+            }).collect();
 
             return bestEntry.get();	
 			/*****************************************************************/
