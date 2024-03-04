@@ -54,9 +54,6 @@ public class RouteTable
             	public int prefixLength = MIN_VALUE;
             };
 
-            System.out.println("Looking for IP: " + ip);
-
-
             try {
             // We attempt to perform a parallel search
             entries.parallelStream()
@@ -67,8 +64,6 @@ public class RouteTable
 
                 // Subnet mask of the current entry
                 int subnetNumber = entry.getDestinationAddress() & subnetMask;
-
-                System.out.println("Checking SN: " + subnetNumber + " SM: " + subnetMask);
 
                 // Length of the current prefix
                 int prefixLength;

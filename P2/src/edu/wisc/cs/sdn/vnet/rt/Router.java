@@ -83,90 +83,66 @@ public class Router extends Device
      */
 	public void handlePacket(Ethernet etherPacket, Iface inIface)
 	{
-		/********************************************************************/
-		/* Handle packets                                             */
-
-        // Check if packet if of type IPv4
-        if (TYPE_IPv4 != etherPacket.getEtherType()) {
-            System.out.println("NOT IPv4,dropping");
-            return;
-        }
         System.out.println("*** -> Received packet: " +
                 etherPacket.toString().replace("\n", "\n\t"));
+		/********************************************************************/
+
+        // Check if packet if of type IPv4
+        if (TYPE_IPv4 != etherPacket.getEtherType())
+            return;
 
         // Get frame's payload
         IPv4 packet = (IPv4) etherPacket.getPayload();
 
         // Verify packet's checksum, if invalid, drop it
-        if (!isChecksumValid(packet)) {
-            System.out.println("checksum invalid, dropping");
+        if (!isChecksumValid(packet))
             return;
-        }
 
         // Check pre-decrement TTL, if not greater than 1, drop it
-        if (packet.getTtl() <= 1) {
-            System.out.println("TTL expired, dropping");
+        if (packet.getTtl() <= 1)
             return;
-        }
 
         // Decrement TTL
         packet.setTtl((byte) (packet.getTtl() - 1));
 
         // If packet was meant for router, drop it
-        if (isPacketForRouter(packet)) {
-            System.out.println("Packet is for router, dropping");
+        if (isPacketForRouter(packet))
             return;
-        }
 
         RouteEntry entry;
         // If no matching entry, drop the packet
-        if (null == (entry = routeTable.lookup(packet.getDestinationAddress()))) {
-            System.out.println("No RouteEntry, dropping");
+        if (null == (entry = routeTable.lookup(packet.getDestinationAddress())))
             return;
-        }
-        System.out.println("Found route entry " + entry);
 
         Iface outIface;
         // If destination is on the incoming interface, there might be a loop.
         // Drop the packet
-        if ((outIface = entry.getInterface()).getName().equals(inIface.getName())) {
-            System.out.println("Loop, dropping");
+        if ((outIface = entry.getInterface()) == inIface)
             return;
-        }
 
         ArpEntry srcEntry;
         // If no matching entry, drop the packet
-        if(null == (srcEntry = arpCache.lookup(outIface.getIpAddress()))) {
-            System.out.println("No matching Source ArpEntry, drop");
+        if(null == (srcEntry = arpCache.lookup(outIface.getIpAddress())))
             return;
-        }
 
         // Get next hop's ip address. If it's zero, next hop is the destination
         int next;
         if ((next = entry.getGatewayAddress()) == 0)
             next = packet.getDestinationAddress();
-        System.out.println("Next = " + next);
 
         ArpEntry destEntry;
-        if(null == (destEntry = arpCache.lookup(next))) {
-            System.out.println("No matching Destination ArpEntry, drop");
+        if(null == (destEntry = arpCache.lookup(next)))
             return;
-        }
 
         // Set source MAC to the router's out interface's MAC
         etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
-        System.out.println("Source MAC: " + outIface.getMacAddress());
         // Set destination MAC to the destination's MAC
         etherPacket.setDestinationMACAddress(destEntry.getMac().toBytes());
-        System.out.println("Dest MAC: " + destEntry.getMac());
-
-        // Send the packet on the out interface
-        System.out.println("Sending packet on interface " + outIface);
-        System.out.println("Sending packet: " + etherPacket);
 
         packet.resetChecksum();
         etherPacket.setPayload(packet);
-        System.out.println("Success? " + sendPacket(etherPacket, outIface));
+        // Send the packet on the out interface
+        sendPacket(etherPacket, outIface);
 		
 		/********************************************************************/
 	}
