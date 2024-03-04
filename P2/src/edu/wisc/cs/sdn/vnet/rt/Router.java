@@ -125,6 +125,7 @@ public class Router extends Device
             System.out.println("No RouteEntry, dropping");
             return;
         }
+        System.out.println("Found route entry " + entry);
 
         Iface outIface;
         // If destination is on the incoming interface, there might be a loop.
@@ -138,6 +139,7 @@ public class Router extends Device
         int next;
         if ((next = entry.getGatewayAddress()) == 0)
             next = packet.getDestinationAddress();
+        System.out.println("Next = " + next);
 
         ArpEntry destEntry;
         // If no matching entry, drop the packet
