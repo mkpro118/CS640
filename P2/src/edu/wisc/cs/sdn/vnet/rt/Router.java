@@ -135,6 +135,13 @@ public class Router extends Device
             return;
         }
 
+        ArpEntry srcEntry;
+        // If no matching entry, drop the packet
+        if(null == (srcEntry = arpCache.lookup(outIface.getIpAddress()))) {
+            System.out.println("No matching Source ArpEntry, drop");
+            return;
+        }
+
         // Get next hop's ip address. If it's zero, next hop is the destination
         int next;
         if ((next = entry.getGatewayAddress()) == 0)
@@ -142,14 +149,13 @@ public class Router extends Device
         System.out.println("Next = " + next);
 
         ArpEntry destEntry;
-        // If no matching entry, drop the packet
         if(null == (destEntry = arpCache.lookup(next))) {
-            System.out.println("No matching ArpEntry, drop");
+            System.out.println("No matching Destination ArpEntry, drop");
             return;
         }
 
         // Set source MAC to the router's out interface's MAC
-        etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
+        etherPacket.setSourceMACAddress(srcEntry.getMac().toBytes());
         // Set destination MAC to the destination's MAC
         etherPacket.setDestinationMACAddress(destEntry.getMac().toBytes());
 
