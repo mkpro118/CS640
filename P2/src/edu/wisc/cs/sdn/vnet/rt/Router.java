@@ -83,9 +83,6 @@ public class Router extends Device
      */
 	public void handlePacket(Ethernet etherPacket, Iface inIface)
 	{
-		System.out.println("*** -> Received packet: " +
-				etherPacket.toString().replace("\n", "\n\t"));
-		
 		/********************************************************************/
 		/* Handle packets                                             */
 
@@ -94,6 +91,8 @@ public class Router extends Device
             System.out.println("NOT IPv4,dropping");
             return;
         }
+        System.out.println("*** -> Received packet: " +
+                etherPacket.toString().replace("\n", "\n\t"));
 
         // Get frame's payload
         IPv4 packet = (IPv4) etherPacket.getPayload();
