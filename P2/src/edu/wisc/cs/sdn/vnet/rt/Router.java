@@ -120,11 +120,6 @@ public class Router extends Device
         if ((outIface = entry.getInterface()) == inIface)
             return;
 
-        ArpEntry srcEntry;
-        // If no matching entry, drop the packet
-        if(null == (srcEntry = arpCache.lookup(outIface.getIpAddress())))
-            return;
-
         // Get next hop's ip address. If it's zero, next hop is the destination
         int next;
         if ((next = entry.getGatewayAddress()) == 0)
@@ -140,7 +135,7 @@ public class Router extends Device
         etherPacket.setDestinationMACAddress(destEntry.getMac().toBytes());
 
         packet.resetChecksum();
-        etherPacket.setPayload(packet);
+        // etherPacket.setPayload(packet);
         // Send the packet on the out interface
         sendPacket(etherPacket, outIface);
 		
