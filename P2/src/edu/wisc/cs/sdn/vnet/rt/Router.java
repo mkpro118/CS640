@@ -154,8 +154,8 @@ public class Router extends Device
         }
 
         // Set source MAC to the router's out interface's MAC
-        etherPacket.setSourceMACAddress(srcEntry.getMac().toBytes());
-        System.out.println("Source MAC: " + srcEntry.getMac());
+        etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
+        System.out.println("Source MAC: " + outIface.getMacAddress());
         // Set destination MAC to the destination's MAC
         etherPacket.setDestinationMACAddress(destEntry.getMac().toBytes());
         System.out.println("Dest MAC: " + destEntry.getMac());
