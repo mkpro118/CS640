@@ -130,7 +130,7 @@ public class Router extends Device
         Iface outIface;
         // If destination is on the incoming interface, there might be a loop.
         // Drop the packet
-        if ((outIface = entry.getInterface()).getName.equals(inIface.getName())) {
+        if ((outIface = entry.getInterface()).getName().equals(inIface.getName())) {
             System.out.println("Loop, dropping");
             return;
         }
