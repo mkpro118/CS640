@@ -163,6 +163,9 @@ public class Router extends Device
         // Send the packet on the out interface
         System.out.println("Sending packet on interface " + outIface);
         System.out.println("Sending packet: " + etherPacket);
+
+        packet.resetChecksum();
+        etherPacket.setPayload(packet);
         System.out.println("Success? " + sendPacket(etherPacket, outIface));
 		
 		/********************************************************************/
