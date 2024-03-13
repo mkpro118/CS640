@@ -61,3 +61,4 @@ q4: all mn_clean
 
 qs: all mn_clean
 	sudo $(PY) $(MN_SCRIPT) q2 q3 q4
+

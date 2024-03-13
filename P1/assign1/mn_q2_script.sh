@@ -76,3 +76,4 @@ h1 pkill -INT java
 c0 echo -e 'Done\n'
 
 c0 echo -e 'Link Latency and Throughput tests finished!\n'
+

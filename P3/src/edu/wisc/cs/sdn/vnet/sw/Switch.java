@@ -58,15 +58,6 @@ public class Switch extends Device
         .filter(e -> !e.getName().equals(inIface.getName()))
         .forEach(iface -> sendPacket(etherPacket, iface));
 		
-
-		//create two threads
-
-		/* main thread:
-		/  
-		/
-		*/
-
-
 		/********************************************************************/
 	}
 }

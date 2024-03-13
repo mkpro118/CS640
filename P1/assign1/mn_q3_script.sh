@@ -103,3 +103,4 @@ c0 /home/mininet/Private/CS640/P1/assign1/prog_dots.sh sleep 10
 h4 pkill -INT java
 h9 pkill -INT java
 h10 pkill -INT java
+
