@@ -236,6 +236,15 @@ public class RouteTable
 	}
 
 	/**
+	 * Clears all entries in the route table.
+	 */
+	public void clear() {
+		synchronized(this.entries) {
+			this.entries.clear();
+		}
+	}
+
+	/**
 	 * Find an entry in the route table.
 	 * @param dstIP destination IP of the entry to find
 	 * @param maskIp subnet mask of the entry to find
