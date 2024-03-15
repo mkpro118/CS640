@@ -11,7 +11,7 @@ import edu.wisc.cs.sdn.vnet.utils.TimedValue;
  */
 public class RouteEntry 
 {
-	public final static byte infinity = 0x10;
+	public final static int infinity = 0x10;
 
 	/** Destination IP address */
 	private int destinationAddress;

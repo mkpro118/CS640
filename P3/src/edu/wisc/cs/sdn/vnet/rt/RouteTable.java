@@ -223,7 +223,7 @@ public class RouteTable
 	 *
 	 *
 	 */
-	public void insert(int dstIp, int gwIp, int maskIp, Iface iface, byte cost)
+	public void insert(int dstIp, int gwIp, int maskIp, Iface iface, int cost)
 	{
 		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface);
 		if (cost < 0) {
