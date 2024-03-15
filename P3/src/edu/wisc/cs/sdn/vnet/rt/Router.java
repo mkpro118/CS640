@@ -4,14 +4,17 @@ import edu.wisc.cs.sdn.vnet.Device;
 import edu.wisc.cs.sdn.vnet.DumpFile;
 import edu.wisc.cs.sdn.vnet.Iface;
 
+import edu.wisc.cs.sdn.vnet.utils.PeriodicTask;
+
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.MACAddress;
 import net.floodlightcontroller.packet.UDP;
-import net.floodlightcontroller.packet.RIPv2;
 import net.floodlightcontroller.packet.RIPv2Entry;
 
 import static net.floodlightcontroller.packet.Ethernet.TYPE_IPv4;
+import static net.floodlightcontroller.packet.RIPv2.COMMAND_REQUEST;
+import static net.floodlightcontroller.packet.RIPv2.COMMAND_RESPONSE;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -26,6 +29,9 @@ public class Router extends Device
 
     /** Using RIP to dynamically configure Route Tables */
     private boolean rip;
+
+    /** Using RIP to dynamically configure Route Tables */
+    private PeriodicTask ripSender;
 	
 	/**
 	 * Creates a router for a specific host.
@@ -36,19 +42,34 @@ public class Router extends Device
 		super(host,logfile);
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
-        this.rip = false;
+        rip = false;
+        ripSender = new PeriodicTask(this::broadcastRIPResponse, 10000L, true);
 	}
 
     /**
      * Allows this router to generate routing tables dynamically using the
      * RIP protocol
      */
-    public void enableRIP() { rip = true; }
+    public void enableRIP() {
+        if (rip) { return; }
+
+        rip = true;
+
+        routeTable.clear();
+        this.broadcastRIPRequest();
+
+        ripSender.stop();
+        ripSender.start();
+    }
 
     /**
      * Disables dynamic routing.
      */
-    public void disableRIP() { rip = false; }
+    public void disableRIP() {
+        rip = false;
+
+        ripSender.stop();
+    }
 	
 	/**
 	 * @return routing table for the router
@@ -117,9 +138,9 @@ public class Router extends Device
             return;
 
         // Handle unsolicited RIP packet
-        if (packet.getPayload().getPayload() instanceof RIPv2) {
+        if (rip && packet.getPayload().getPayload() instanceof RIPv2) {
             new Thread(() -> {
-                handleRIP((RIPv2) packet.getPayload().getPayload())
+                handleRIP((RIPv2) packet.getPayload().getPayload());
             }).start();
             return;
         }
@@ -215,7 +236,30 @@ public class Router extends Device
                .anyMatch(iface -> dest == iface.getIpAddress());
     }
 
-    private void handleRIP(RIPv2 packet) {
+    private void broadcastRIPResponse() {
+        // TODO:
+    }
 
+    private void broadcastRIPRequest() {
+        // TODO:
+    }
+
+    private void handleRIP(RIPv2 packet) {
+        switch (packet.getCommand()) {
+        case COMMAND_REQUEST:
+            break;
+        case COMMAND_RESPONSE:
+            break;
+        default:
+            System.err.println("Invalid RIP command type. Dropping packet");
+        }
+    }
+
+    private void handleRIPResponse(RIPv2 packet) {
+        // TODO:
+    }
+
+    private void handleRIPRequest(RIPv2 packet) {
+        // TODO:
     }
 }
