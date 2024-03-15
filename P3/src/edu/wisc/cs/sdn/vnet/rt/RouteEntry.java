@@ -26,7 +26,7 @@ public class RouteEntry
 	 * the destination or gateway */
 	private Iface iface;
 
-	private TimedValue<Byte> cost;
+	private TimedValue<Integer> cost;
 	
 	/**
 	 * Create a new route table entry.
@@ -80,10 +80,10 @@ public class RouteEntry
 	/**
 	 * @return the cost associated with this entry
 	 */
-	public byte getCost()
+	public int getCost()
 	{ return cost.getValue(); }
 
-	public void setCost(byte cost)
+	public void setCost(int cost)
 	{ this.cost = new TimedValue<>(cost); }
 
 	/**
