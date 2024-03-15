@@ -92,8 +92,8 @@ public class RouteEntry
 	public long getLastUpdate()
 	{ return this.cost.getLastUpdate(); }
 
-	public long update()
-	{ return this.cost.update(); }
+	public void update()
+	{ this.cost.update(); }
 	
 	public String toString()
 	{
