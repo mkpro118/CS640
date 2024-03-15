@@ -40,6 +40,8 @@ public class RouteTable
 		rip = false;
 	}
 
+	public List<RouteEntry> getEntries() { return entries; }
+
 	/**
 	 * Enable RIP configuration
 	 */
