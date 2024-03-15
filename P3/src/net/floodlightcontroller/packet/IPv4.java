@@ -30,7 +30,7 @@ import java.util.Map;
  * @author David Erickson (daviderickson@cs.stanford.edu)
  *
  */
-public class IPv4 extends BasePacket {
+public class IPv4 extends BasePacket implements IChecksum<IPv4> {
     public static final byte PROTOCOL_ICMP = 0x1;
     public static final byte PROTOCOL_TCP = 0x6;
     public static final byte PROTOCOL_UDP = 0x11;
@@ -198,6 +198,7 @@ public class IPv4 extends BasePacket {
     /**
      * @return the checksum
      */
+    @Override
     public short getChecksum() {
         return checksum;
     }
@@ -205,6 +206,7 @@ public class IPv4 extends BasePacket {
     /**
      * @param checksum the checksum to set
      */
+    @Override
     public IPv4 setChecksum(short checksum) {
         this.checksum = checksum;
         return this;

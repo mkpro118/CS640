@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * @author David Erickson (daviderickson@cs.stanford.edu)
  */
-public class UDP extends BasePacket {
+public class UDP extends BasePacket implements IChecksum<UDP> {
     public static Map<Short, Class<? extends IPacket>> decodeMap;
     public static short DHCP_SERVER_PORT = (short)67;
     public static short DHCP_CLIENT_PORT = (short)68;
@@ -81,6 +81,7 @@ public class UDP extends BasePacket {
     /**
      * @return the checksum
      */
+    @Override
     public short getChecksum() {
         return checksum;
     }
@@ -88,6 +89,7 @@ public class UDP extends BasePacket {
     /**
      * @param checksum the checksum to set
      */
+    @Override
     public UDP setChecksum(short checksum) {
         this.checksum = checksum;
         return this;
