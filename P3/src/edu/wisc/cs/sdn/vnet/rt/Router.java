@@ -9,10 +9,12 @@ import edu.wisc.cs.sdn.vnet.utils.PeriodicTask;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.MACAddress;
-import net.floodlightcontroller.packet.UDP;
 import net.floodlightcontroller.packet.RIPv2Entry;
+import net.floodlightcontroller.packet.UDP;
 
 import static net.floodlightcontroller.packet.Ethernet.TYPE_IPv4;
+import static net.floodlightcontroller.packet.IPv4.PROTOCOL_UDP;
+import static net.floodlightcontroller.packet.MACAddress.MAC_ADDRESS_LENGTH;
 import static net.floodlightcontroller.packet.RIPv2.COMMAND_REQUEST;
 import static net.floodlightcontroller.packet.RIPv2.COMMAND_RESPONSE;
 
@@ -32,6 +34,28 @@ public class Router extends Device
 
     /** Using RIP to dynamically configure Route Tables */
     private PeriodicTask ripSender;
+
+    /** Using RIP to dynamically configure Route Tables */
+    private PeriodicTask cleaner;
+
+    private boolean initialRIPResponse;
+
+    /** RIP Destination IP is 224.0.0.9 */
+    private final static int RIP_DEST_IP;
+
+    /** RIP Destination MAC is FF:FF:FF:FF:FF:FF */
+    private final static byte[] RIP_DEST_MAC;
+
+    static {
+        /** convert 224.0.0.9 to it's int value */
+        RIP_DEST_IP = (224 << 24) | 9;
+
+        /** convert FF:FF:FF:FF:FF:FF to byte[] value */
+        RIP_DEST_MAC = new byte[MAC_ADDRESS_LENGTH];
+        for (int i = 0; i < RIP_DEST_MAC.length; i++) {
+            RIP_DEST_MAC[i] = (byte) 0xFF;
+        }
+    }
 	
 	/**
 	 * Creates a router for a specific host.
@@ -44,6 +68,7 @@ public class Router extends Device
 		this.arpCache = new ArpCache();
         rip = false;
         ripSender = new PeriodicTask(this::broadcastRIPResponse, 10000L, true);
+        cleaner = new PeriodicTask(this::clearStaleEntries, 10000L, true);
 	}
 
     /**
@@ -54,11 +79,11 @@ public class Router extends Device
         if (rip) { return; }
 
         rip = true;
+        ripSender.stop();
 
         routeTable.clear();
-        this.broadcastRIPRequest();
 
-        ripSender.stop();
+        initializeRouteTable();
         ripSender.start();
     }
 
@@ -138,10 +163,11 @@ public class Router extends Device
             return;
 
         // Handle unsolicited RIP packet
-        if (rip && packet.getPayload().getPayload() instanceof RIPv2) {
-            new Thread(() -> {
-                handleRIP((RIPv2) packet.getPayload().getPayload());
-            }).start();
+        if (rip && packet.getProtocol() == PROTOCOL_UDP) {
+            // (new Thread(() -> {
+            //     handleRIP((RIPv2) packet.getPayload().getPayload());
+            // })).start();
+            handleRIP((RIPv2) packet.getPayload().getPayload());
             return;
         }
 
@@ -240,15 +266,99 @@ public class Router extends Device
         // TODO:
     }
 
+    private void initializeRouteTable() {
+        interfaces        // interfaces is a Map<String, Iface>
+        .values()          // We only consider the Iface values
+        .parallelStream()
+        .forEach(iface -> {
+            routeTable.insert(
+                iface.getIpAddress() & iface.getSubnetMask(), /* destination IP */
+                0, /* Gateway Address */
+                iface.getSubnetMask(), /* subnet mask */
+                iface, /* Interface to send on */
+                0 /* Cost of the link */
+            );
+        });
+        broadcastRIPRequest();
+    }
+
     private void broadcastRIPRequest() {
-        // TODO:
+        interfaces        // interfaces is a Map<String, Iface>
+        .values()          // We only consider the Iface values
+        .parallelStream()
+        .forEach(iface -> {
+            sendPacket(generateRIPRequest(iface), iface);
+        });
+    }
+
+    private Ethernet generateRIPRequest(Iface iface) {
+        // Generate RIPv2 Request packet
+        RIPv2 ripPacket = new RIPv2();
+        ripPacket.setCommand(RIPv2.COMMAND_REQUEST);
+
+        return encapsulateRIP(ripPacket, iface);
+    }
+
+    private Ethernet generateRIPResponse(Iface iface) {
+        // Generate RIPv2 Request packet
+        RIPv2 ripPacket = new RIPv2();
+        ripPacket.setCommand(RIPv2.COMMAND_RESPONSE);
+
+        routeTable
+        .getEntries()
+        .parallelStream()
+        .forEach(entry -> {
+            int address = entry.getDestinationAddress();
+            int subnetMask = entry.getMaskAddress();
+            int metric = entry.getCost();
+            RIPv2Entry ripEntry = new RIPv2Entry(address, subnetMask, metric);
+
+            ripEntry.setNextHopAddress(address);
+
+            ripPacket.addEntry(ripEntry);
+        });
+
+        return encapsulateRIP(ripPacket, iface);
+    }
+
+    private Ethernet encapsulateRIP(RIPv2 ripPacket, Iface iface) {
+        // Generate UDP packet for the RIP Request packet
+        UDP udpPacket = new UDP();
+        udpPacket.setSourcePort(UDP.RIP_PORT);
+        udpPacket.setDestinationPort(UDP.RIP_PORT);
+        udpPacket.setPayload(ripPacket);
+
+        // Generate IP packet to carry the UDP packet
+        IPv4 ipPacket = new IPv4();
+        ipPacket.setSourceAddress(iface.getIpAddress());
+        ipPacket.setDestinationAddress(RIP_DEST_IP);
+        ipPacket.setProtocol(PROTOCOL_UDP);
+        ipPacket.setPayload(udpPacket);
+
+        // Generate Ethernet packet to carry the IP packet
+        Ethernet etherPacket = new Ethernet();
+        etherPacket.setEtherType(TYPE_IPv4);
+        etherPacket.setDestinationMACAddress(RIP_DEST_MAC);
+        etherPacket.setSourceMACAddress(iface.getMacAddress().toBytes());
+        etherPacket.setPayload(ipPacket);
+
+        // This should actually reset the UDP, IP
+        // and Ethernet packet's checksums too
+        ripPacket.resetChecksum();
+
+        return etherPacket;
     }
 
     private void handleRIP(RIPv2 packet) {
+        // TODO: Perform checks
+
+        // Dispatch based on type
         switch (packet.getCommand()) {
         case COMMAND_REQUEST:
+            handleRIPRequest(packet);
             break;
         case COMMAND_RESPONSE:
+            handleRIPResponse(packet);
             break;
         default:
             System.err.println("Invalid RIP command type. Dropping packet");
