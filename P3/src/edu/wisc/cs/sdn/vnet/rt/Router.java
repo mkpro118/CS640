@@ -7,6 +7,9 @@ import edu.wisc.cs.sdn.vnet.Iface;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.MACAddress;
+import net.floodlightcontroller.packet.UDP;
+import net.floodlightcontroller.packet.RIPv2;
+import net.floodlightcontroller.packet.RIPv2Entry;
 
 import static net.floodlightcontroller.packet.Ethernet.TYPE_IPv4;
 
@@ -20,6 +23,9 @@ public class Router extends Device
 	
 	/** ARP cache for the router */
 	private ArpCache arpCache;
+
+    /** Using RIP to dynamically configure Route Tables */
+    private boolean rip;
 	
 	/**
 	 * Creates a router for a specific host.
@@ -30,7 +36,19 @@ public class Router extends Device
 		super(host,logfile);
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
+        this.rip = false;
 	}
+
+    /**
+     * Allows this router to generate routing tables dynamically using the
+     * RIP protocol
+     */
+    public void enableRIP() { rip = true; }
+
+    /**
+     * Disables dynamic routing.
+     */
+    public void disableRIP() { rip = false; }
 	
 	/**
 	 * @return routing table for the router
@@ -97,6 +115,14 @@ public class Router extends Device
         // Verify packet's checksum, if invalid, drop it
         if (!isChecksumValid(packet))
             return;
+
+        // Handle unsolicited RIP packet
+        if (packet.getPayload().getPayload() instanceof RIPv2) {
+            new Thread(() -> {
+                handleRIP((RIPv2) packet.getPayload().getPayload())
+            }).start();
+            return;
+        }
 
         // Check pre-decrement TTL, if not greater than 1, drop it
         if (packet.getTtl() <= 1)
@@ -187,5 +213,9 @@ public class Router extends Device
                .parallelStream()  // Try to process in parallel
                .unordered()       // Order doesn't matter
                .anyMatch(iface -> dest == iface.getIpAddress());
+    }
+
+    private void handleRIP(RIPv2 packet) {
+
     }
 }
