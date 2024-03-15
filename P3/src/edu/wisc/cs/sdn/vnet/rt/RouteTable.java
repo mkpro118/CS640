@@ -26,13 +26,21 @@ import static java.lang.Integer.bitCount;
 public class RouteTable 
 {
 	/** Entries in the route table */
-	private List<RouteEntry> entries; 
+	private List<RouteEntry> entries;
+
+	/** Use RIP configuration */
+	private boolean rip;
 	
 	/**
 	 * Initialize an empty route table.
 	 */
 	public RouteTable()
-	{ this.entries = new LinkedList<RouteEntry>(); }
+	{
+		this.entries = new LinkedList<RouteEntry>();
+		rip = false;
+	}
+
+	public void enableRIP() { rip = true; }
 	
 	/**
 	 * Lookup the route entry that matches a given IP address.
@@ -191,9 +199,31 @@ public class RouteTable
 	 */
 	public void insert(int dstIp, int gwIp, int maskIp, Iface iface)
 	{
+		insert(dstIp, gwIp, maskIp, iface, RouteEntry.infinity);
+	}
+
+	/**
+	 * Add an entry to the route table.
+	 * @param dstIp destination IP
+	 * @param gwIp gateway IP
+	 * @param maskIp subnet mask
+	 * @param iface router interface out which to send packets to reach the
+	 *		destination or gateway
+	 * @param cost cost of this link
+	 *
+	 *
+	 */
+	public void insert(int dstIp, int gwIp, int maskIp, Iface iface, byte cost)
+	{
 		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface);
+		if (cost < 0) {
+			throw new IllegalArgumentException(
+				"Cannot have negative costs on links!"
+			);
+		}
+		entry.setCost(cost);
 		synchronized(this.entries)
-		{ 
+		{
 			this.entries.add(entry);
 		}
 	}
