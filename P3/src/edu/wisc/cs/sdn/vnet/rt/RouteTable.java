@@ -40,7 +40,15 @@ public class RouteTable
 		rip = false;
 	}
 
+	/**
+	 * Enable RIP configuration
+	 */
 	public void enableRIP() { rip = true; }
+
+	/**
+	 * Disable RIP configuration
+	 */
+	public void disableRIP() { rip = false; }
 	
 	/**
 	 * Lookup the route entry that matches a given IP address.
