@@ -8,7 +8,9 @@ import edu.wisc.cs.sdn.vnet.utils.PeriodicTask;
 
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.packet.IChecksum;
 import net.floodlightcontroller.packet.MACAddress;
+import net.floodlightcontroller.packet.RIPv2;
 import net.floodlightcontroller.packet.RIPv2Entry;
 import net.floodlightcontroller.packet.UDP;
 
@@ -17,7 +19,9 @@ import static net.floodlightcontroller.packet.IPv4.PROTOCOL_UDP;
 import static net.floodlightcontroller.packet.MACAddress.MAC_ADDRESS_LENGTH;
 import static net.floodlightcontroller.packet.RIPv2.COMMAND_REQUEST;
 import static net.floodlightcontroller.packet.RIPv2.COMMAND_RESPONSE;
+import static net.floodlightcontroller.packet.UDP.RIP_PORT;
 
+import java.util.Arrays;
 import java.util.function.Function;
 
 /**
@@ -170,7 +174,8 @@ public class Router extends Device
             // (new Thread(() -> {
             //     handleRIP((RIPv2) packet.getPayload().getPayload());
             // })).start();
-            handleRIP((RIPv2) packet.getPayload().getPayload());
+
+            handleRIP(etherPacket, inIface);
             return;
         }
 
@@ -227,7 +232,7 @@ public class Router extends Device
      *
      * @return true if checksum is correct, false otherwise
      */
-    private boolean isChecksumValid(IPv4 packet) {
+    private boolean isChecksumValid(IChecksum<?> packet) {
         // Original checksum
         short checksum = packet.getChecksum();
 
@@ -302,7 +307,7 @@ public class Router extends Device
         }
 
         interfaces        // interfaces is a Map<String, Iface>
-        .values()          // We only consider the Iface values
+        .values()         // We only consider the Iface values
         .parallelStream()
         .forEach(iface -> {
             sendPacket(generator.apply(iface), iface);
@@ -342,23 +347,23 @@ public class Router extends Device
     private Ethernet encapsulateRIP(RIPv2 ripPacket, Iface iface) {
         // Generate UDP packet for the RIP Request packet
         UDP udpPacket = new UDP();
-        udpPacket.setSourcePort(UDP.RIP_PORT);
-        udpPacket.setDestinationPort(UDP.RIP_PORT);
-        udpPacket.setPayload(ripPacket);
+        udpPacket.setSourcePort(RIP_PORT)
+                 .setDestinationPort(RIP_PORT)
+                 .setPayload(ripPacket);
 
         // Generate IP packet to carry the UDP packet
         IPv4 ipPacket = new IPv4();
-        ipPacket.setSourceAddress(iface.getIpAddress());
-        ipPacket.setDestinationAddress(RIP_DEST_IP);
-        ipPacket.setProtocol(PROTOCOL_UDP);
-        ipPacket.setPayload(udpPacket);
+        ipPacket.setSourceAddress(iface.getIpAddress())
+                .setDestinationAddress(RIP_DEST_IP)
+                .setProtocol(PROTOCOL_UDP)
+                .setPayload(udpPacket);
 
         // Generate Ethernet packet to carry the IP packet
         Ethernet etherPacket = new Ethernet();
-        etherPacket.setEtherType(TYPE_IPv4);
-        etherPacket.setDestinationMACAddress(RIP_DEST_MAC);
-        etherPacket.setSourceMACAddress(iface.getMacAddress().toBytes());
-        etherPacket.setPayload(ipPacket);
+        etherPacket.setEtherType(TYPE_IPv4)
+                   .setDestinationMACAddress(RIP_DEST_MAC)
+                   .setSourceMACAddress(iface.getMacAddress().toBytes())
+                   .setPayload(ipPacket);
 
         // This should actually reset the UDP, IP
         // and Ethernet packet's checksums too
@@ -367,27 +372,56 @@ public class Router extends Device
         return etherPacket;
     }
 
-    private void handleRIP(RIPv2 packet) {
-        // TODO: Perform checks
+    private void handleRIP(Ethernet etherPacket, Iface iface) {
+        // Check the destination MAC address is the RIP MAC "FF:FF:FF:FF:FF:FF"
+        if (!Arrays.equals(etherPacket.getDestinationMACAddress(), RIP_DEST_MAC))
+            return;
+
+        IPv4 ipPacket = (IPv4) etherPacket.getPayload();
+
+        // Check the destination IP address is the RIP IP "224.0.0.9"
+        if (ipPacket.getDestinationAddress() != RIP_DEST_IP)
+            return;
+
+        // Check underlying packet is UDP
+        if (!(ipPacket.getPayload() instanceof UDP))
+            return;
+
+        UDP udpPacket = (UDP) ipPacket.getPayload();
+
+        // UDP should have valid checksum
+        if (!isChecksumValid(udpPacket))
+            return;
+
+        // RIP packet should have the UDP.RIP_PORT as the destination port
+        if (udpPacket.getDestinationPort() != RIP_PORT)
+            return;
+
+        // Check underlying packet is RIPv2
+        if (!(udpPacket.getPayload() instanceof RIPv2))
+            return;
+
+        RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
 
         // Dispatch based on type
-        switch (packet.getCommand()) {
+        switch (ripPacket.getCommand()) {
         case COMMAND_REQUEST:
-            handleRIPRequest(packet);
+            handleRIPRequest(etherPacket, iface);
             break;
         case COMMAND_RESPONSE:
-            handleRIPResponse(packet);
+            handleRIPResponse(etherPacket);
             break;
         default:
             System.err.println("Invalid RIP command type. Dropping packet");
         }
     }
 
-    private void handleRIPResponse(RIPv2 packet) {
-        // TODO:
+    private void handleRIPRequest(Ethernet etherPacket, Iface iface) {
+        Ethernet responseFrame = generateRIPResponse(iface);
+
     }
 
-    private void handleRIPRequest(RIPv2 packet) {
+    private void handleRIPResponse(Ethernet etherPacket) {
         // TODO:
     }
 
