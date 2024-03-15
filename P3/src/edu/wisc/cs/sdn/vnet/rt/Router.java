@@ -18,6 +18,8 @@ import static net.floodlightcontroller.packet.MACAddress.MAC_ADDRESS_LENGTH;
 import static net.floodlightcontroller.packet.RIPv2.COMMAND_REQUEST;
 import static net.floodlightcontroller.packet.RIPv2.COMMAND_RESPONSE;
 
+import java.util.function.Function;
+
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
  */
@@ -67,7 +69,7 @@ public class Router extends Device
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
         rip = false;
-        ripSender = new PeriodicTask(this::broadcastRIPResponse, 10000L, true);
+        ripSender = new PeriodicTask(() -> broadcastRIP(COMMAND_RESPONSE), 10000L, true);
         cleaner = new PeriodicTask(this::clearStaleEntries, 10000L, true);
 	}
 
@@ -94,6 +96,7 @@ public class Router extends Device
         rip = false;
 
         ripSender.stop();
+        routeTable.disableRIP();
     }
 	
 	/**
@@ -262,32 +265,47 @@ public class Router extends Device
                .anyMatch(iface -> dest == iface.getIpAddress());
     }
 
-    private void broadcastRIPResponse() {
-        // TODO:
-    }
-
     private void initializeRouteTable() {
+        // Enable RIP on the routing table
+        routeTable.enableRIP();
+
+        // Setup routing tables for all directly connected interfaces
         interfaces        // interfaces is a Map<String, Iface>
-        .values()          // We only consider the Iface values
+        .values()         // We only consider the Iface values
         .parallelStream()
         .forEach(iface -> {
             routeTable.insert(
                 iface.getIpAddress() & iface.getSubnetMask(), /* destination IP */
-                0, /* Gateway Address */
+                0x00000000, /* Gateway Address */
                 iface.getSubnetMask(), /* subnet mask */
                 iface, /* Interface to send on */
-                0 /* Cost of the link */
+                (byte) 0x00 /* Cost of the link */
             );
         });
-        broadcastRIPRequest();
+
+        // Request information on startup
+        broadcastRIP(COMMAND_REQUEST);
     }
 
-    private void broadcastRIPRequest() {
+    private void broadcastRIP(int type) {
+        Function<Iface, Ethernet> generator;
+        switch (type) {
+        case COMMAND_REQUEST:
+            generator = this::generateRIPRequest;
+            break;
+        case COMMAND_RESPONSE:
+            generator = this::generateRIPResponse;
+            break;
+        default:
+            System.err.println("Invalid broadcast type!");
+            return;
+        }
+
         interfaces        // interfaces is a Map<String, Iface>
         .values()          // We only consider the Iface values
         .parallelStream()
         .forEach(iface -> {
-            sendPacket(generateRIPRequest(iface), iface);
+            sendPacket(generator.apply(iface), iface);
         });
     }
 
@@ -370,6 +388,10 @@ public class Router extends Device
     }
 
     private void handleRIPRequest(RIPv2 packet) {
+        // TODO:
+    }
+
+    private void clearStaleEntries() {
         // TODO:
     }
 }
