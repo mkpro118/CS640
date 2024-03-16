@@ -26,7 +26,11 @@ public class RouteEntry
 	 * the destination or gateway */
 	private Iface iface;
 
+	/** Cost for this entry */
 	private TimedValue<Integer> cost;
+
+	/** Keep this entry on cleanup */
+	private boolean permanent;
 	
 	/**
 	 * Create a new route table entry.
@@ -44,7 +48,18 @@ public class RouteEntry
 		this.maskAddress = maskAddress;
 		this.iface = iface;
 		this.cost = new TimedValue<>(RouteEntry.infinity);
+		this.permanent = false;
 	}
+
+	/**
+	 * Marks this entry as permanent
+	 */
+	public void makePermanent() { permanent = true; }
+
+	/**
+	 * @return true if the entry is marked permanent, false otherwise
+	 */
+	public boolean isPermanent() { return permanent; }
 	
 	/**
 	 * @return destination IP address
