@@ -41,9 +41,6 @@ public class Router extends Device
     /** Using RIP to dynamically configure Route Tables */
     private PeriodicTask ripSender;
 
-    /** Using RIP to dynamically configure Route Tables */
-    private PeriodicTask cleaner;
-
     private boolean initialRIPResponse;
 
     /** RIP Destination IP is 224.0.0.9 */
@@ -74,7 +71,6 @@ public class Router extends Device
 		this.arpCache = new ArpCache();
         rip = false;
         ripSender = new PeriodicTask(() -> broadcastRIP(COMMAND_RESPONSE), 10000L, true);
-        cleaner = new PeriodicTask(this::clearStaleEntries, 10000L, true);
 	}
 
     /**
@@ -280,11 +276,12 @@ public class Router extends Device
         .parallelStream()
         .forEach(iface -> {
             routeTable.insert(
-                iface.getIpAddress() & iface.getSubnetMask(), /* destination IP */
-                0x00000000, /* Gateway Address */
-                iface.getSubnetMask(), /* subnet mask */
-                iface, /* Interface to send on */
-                (byte) 0x00 /* Cost of the link */
+/* dstIp   */   iface.getIpAddress() & iface.getSubnetMask(),
+/* gwIp    */   0x00000000,
+/* maskIp  */   iface.getSubnetMask(),
+/* iface   */   iface,
+/* cost    */   0x0,
+/*permanent*/   true
             );
         });
 
@@ -409,7 +406,7 @@ public class Router extends Device
             handleRIPRequest(etherPacket, iface);
             break;
         case COMMAND_RESPONSE:
-            handleRIPResponse(etherPacket);
+            handleRIPResponse(etherPacket, iface);
             break;
         default:
             System.err.println("Invalid RIP command type. Dropping packet");
@@ -419,13 +416,71 @@ public class Router extends Device
     private void handleRIPRequest(Ethernet etherPacket, Iface iface) {
         Ethernet responseFrame = generateRIPResponse(iface);
 
+        responseFrame.setDestinationMACAddress(etherPacket.getSourceMACAddress());
+
+        IPv4 requestPacket = (IPv4) etherPacket.getPayload();
+        IPv4 responsePacket = (IPv4) responseFrame.getPayload();
+        responsePacket.setDestinationAddress(requestPacket.getSourceAddress());
+
+        // Reset the RIP checksum, and that will reset all parent checksums
+        responsePacket.getPayload().getPayload().resetChecksum();
+
+        sendPacket(responseFrame, iface);
     }
 
-    private void handleRIPResponse(Ethernet etherPacket) {
-        // TODO:
-    }
+    private void handleRIPResponse(Ethernet etherPacket, Iface iface) {
+        IPv4 ipPacket = (IPv4) etherPacket.getPayload();
+        RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
 
-    private void clearStaleEntries() {
-        // TODO:
+        // While it is highly unlikely, in case we don't have a entry for
+        // the interface this RIP Packet arrived on, then our assumed cost
+        // is infinity
+        int currCost = RouteEntry.infinity;
+
+        RouteEntry current = routeTable.lookup(ipPacket.getSourceAddress());
+
+        // It is highly unlikely the entry is null, but we check anyway
+        if (current != null) {
+            currCost = current.getCost();
+        }
+
+        // Add one to account for the very next hop on the interface this packet
+        // arrived on.
+        final int cost = currCost + 1;
+
+        ripPacket
+        .getEntries()
+        .parallelStream()
+        .unordered()
+        .forEach(ripEntry -> {
+            RouteEntry routeEntry = routeTable.lookup(ripEntry.getAddress());
+
+            if (routeEntry != null) {
+                // If we have a Route Entry for this RIP Entry, then use distance
+                // vector's relax step to determine whether we should update
+
+                if (ripEntry.getMetric() + cost < routeEntry.getCost()) {
+                    routeTable.update(
+    /* dstIp  */        ripEntry.getAddress() & ripEntry.getSubnetMask(),
+    /* maskIp */        ripEntry.getSubnetMask(),
+    /* gwIp   */        ipPacket.getSourceAddress(),
+    /* iface  */        iface,
+    /* cost   */        ripEntry.getMetric() + cost
+                    );
+                }
+            } else {
+                // If we don't have an Route Entry for this RIP Entry
+                // just add it as a temporary entry
+
+                routeTable.insert(
+ /* dstIp     */    ripEntry.getAddress() & ripEntry.getSubnetMask(),
+ /* gwIp      */    ipPacket.getSourceAddress(),
+ /* maskIp    */    ripEntry.getSubnetMask(),
+ /* iface     */    iface,
+ /* cost      */    ripEntry.getMetric() + cost,
+ /* permanent */    false
+                );
+            }
+        });
     }
 }
