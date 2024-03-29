@@ -459,7 +459,7 @@ public class Router extends Device
                 // If we have a Route Entry for this RIP Entry, then use distance
                 // vector's relax step to determine whether we should update
 
-                if (ripEntry.getMetric() + cost < routeEntry.getCost()) {
+                if (ripEntry.getMetric() + cost <= routeEntry.getCost()) {
                     routeTable.update(
     /* dstIp  */        ripEntry.getAddress() & ripEntry.getSubnetMask(),
     /* maskIp */        ripEntry.getSubnetMask(),
