@@ -41,8 +41,6 @@ public class Router extends Device
     /** Using RIP to dynamically configure Route Tables */
     private PeriodicTask ripSender;
 
-    private boolean initialRIPResponse;
-
     /** RIP Destination IP is 224.0.0.9 */
     private final static int RIP_DEST_IP;
 
