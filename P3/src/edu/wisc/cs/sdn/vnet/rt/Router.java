@@ -430,25 +430,6 @@ public class Router extends Device
         IPv4 ipPacket = (IPv4) etherPacket.getPayload();
         RIPv2 ripPacket = (RIPv2) ipPacket.getPayload().getPayload();
 
-        // While it is highly unlikely, in case we don't have a entry for
-        // the interface this RIP Packet arrived on, then our assumed cost
-        // is infinity
-  //      int currCost = RouteEntry.infinity;
-
-        /*RouteEntry current = routeTable.lookup(ipPacket.getSourceAddress());
-
-        // It is highly unlikely the entry is null, but we check anyway
-        if (current != null) {
-    //        currCost = current.getCost();
-        } else {
-            
-            return;
-        }
-
-        // Add one to account for the very next hop on the interface this packet
-        // arrived on.
-//        final int cost = currCost + 1;
-*/
         ripPacket
         .getEntries()
         .parallelStream()
@@ -460,13 +441,13 @@ public class Router extends Device
                 // If we have a Route Entry for this RIP Entry, then use distance
                 // vector's relax step to determine whether we should update
 
-                if (ripEntry.getMetric() + /*current.getCost() +*/ 1 <= routeEntry.getCost()) {
+                if (ripEntry.getMetric() + 1 <= routeEntry.getCost()) {
                     routeTable.update(
     /* dstIp  */        ripEntry.getAddress() & ripEntry.getSubnetMask(),
     /* maskIp */        ripEntry.getSubnetMask(),
     /* gwIp   */        ipPacket.getSourceAddress(),
     /* iface  */        iface,
-    /* cost   */        ripEntry.getMetric() + /*current.getCost() +*/ 1
+    /* cost   */        ripEntry.getMetric() + 1
                     );
                 }
             } else {
