@@ -43,7 +43,7 @@ public class RouteTable
 	{
 		this.entries = new LinkedList<RouteEntry>();
 		rip = false;
-		cleaner = new PeriodicTask(this::clearStaleEntries, 10000L, true);
+		cleaner = new PeriodicTask(this::clearStaleEntries, 1000L, true);
 	}
 
 	public List<RouteEntry> getEntries() { return entries; }
