@@ -7,6 +7,7 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from functools import partial
 from itertools import chain, count, combinations
+from math import sin, cos, pi
 from typing import (
     Any,
     ClassVar,
@@ -336,17 +337,19 @@ class Topo:
                 'matplotlib is required for visualization.'
             )
 
-        random.seed(self.n_hosts + self.n_links + self.n_routers)
-        points = set()
+        # random.seed(self.n_hosts + self.n_links + self.n_routers)
 
         vertices = {}
-        for node in chain(self.hosts, self.routers):
-            while True:
-                point = (random.randint(1, 10), random.randint(1, 10))
-                if point not in points:
-                    points.add(point)
-                    break
+        n = self.n_routers
+        two_pi_over_n = 2 * pi / n
+        for i, node in enumerate(self.routers):
+            arg = i * two_pi_over_n
+            point = 10 * cos(arg), 10 * sin(arg)
+            vertices[node.name] = point
 
+        for i, node in enumerate(self.hosts):
+            arg = i * two_pi_over_n
+            point = 15 * cos(arg), 15 * sin(arg)
             vertices[node.name] = point
 
         fig, ax = plt.subplots(nrows=1, ncols=1)
@@ -379,7 +382,8 @@ def gen_topo(n_hosts: Optional[int] = None,
 
     routers = [Router(f'r{i + 1}') for i in range(n_routers)]
 
-    host_routers = routers[:n_hosts]
+    # host_routers = routers[:n_hosts]
+    host_routers = random.choices(routers, k=n_hosts)
 
     hosts: List[Host] = list()
     links: MutableSet[Link] = set()
@@ -406,12 +410,14 @@ def gen_topo(n_hosts: Optional[int] = None,
             links.add(Link(*edge))
 
     topo = Topo(hosts, routers, links)
-    topo.ensure_connected()
+    # topo.ensure_connected()
     return topo
 
 
 if __name__ == '__main__':
-    # topo = gen_topo(density=0.5)
+    # topo = gen_topo(n_hosts=12, n_routers=14, density=.2)
+    # topo.visualize()
+    # topo.ensure_connected()
     topo = Topo.load('P3/topos/cursed.topo')
     print('Hosts', topo.n_hosts)
     print(*topo.hosts, sep='\n')
