@@ -103,6 +103,7 @@ public class PeriodicTask implements Runnable {
      * Starts the periodic task
      */
     public void start() {
+        active = true;
         thread = new Thread(this);
         thread.setDaemon(isDaemon);
         thread.start();
@@ -116,7 +117,10 @@ public class PeriodicTask implements Runnable {
 
         if (thread == null) return;
 
-        try { thread.join(); }
+        try {
+            thread.join();
+            thread = null;
+        }
         catch (InterruptedException e) { e.printStackTrace(System.err); }
     }
 }

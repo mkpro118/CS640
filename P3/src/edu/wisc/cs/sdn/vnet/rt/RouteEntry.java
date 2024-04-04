@@ -3,12 +3,16 @@ package edu.wisc.cs.sdn.vnet.rt;
 import net.floodlightcontroller.packet.IPv4;
 import edu.wisc.cs.sdn.vnet.Iface;
 
+import edu.wisc.cs.sdn.vnet.utils.TimedValue;
+
 /**
  * An entry in a route table.
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
  */
 public class RouteEntry 
 {
+	public final static int infinity = 0x10;
+
 	/** Destination IP address */
 	private int destinationAddress;
 	
@@ -21,6 +25,12 @@ public class RouteEntry
 	/** Router interface out which packets should be sent to reach
 	 * the destination or gateway */
 	private Iface iface;
+
+	/** Cost for this entry */
+	private TimedValue<Integer> cost;
+
+	/** Keep this entry on cleanup */
+	private boolean permanent;
 	
 	/**
 	 * Create a new route table entry.
@@ -37,7 +47,19 @@ public class RouteEntry
 		this.gatewayAddress = gatewayAddress;
 		this.maskAddress = maskAddress;
 		this.iface = iface;
+		this.cost = new TimedValue<>(RouteEntry.infinity);
+		this.permanent = false;
 	}
+
+	/**
+	 * Marks this entry as permanent
+	 */
+	public void makePermanent() { permanent = true; }
+
+	/**
+	 * @return true if the entry is marked permanent, false otherwise
+	 */
+	public boolean isPermanent() { return permanent; }
 	
 	/**
 	 * @return destination IP address
@@ -69,6 +91,24 @@ public class RouteEntry
 
 	public void setInterface(Iface iface)
 	{ this.iface = iface; }
+
+	/**
+	 * @return the cost associated with this entry
+	 */
+	public int getCost()
+	{ return cost.getValue(); }
+
+	public void setCost(int cost)
+	{ this.cost = new TimedValue<>(cost); }
+
+	/**
+	 * @return the last time the entry was updated
+	 */
+	public long getLastUpdate()
+	{ return this.cost.getLastUpdate(); }
+
+	public void update()
+	{ this.cost.update(); }
 	
 	public String toString()
 	{

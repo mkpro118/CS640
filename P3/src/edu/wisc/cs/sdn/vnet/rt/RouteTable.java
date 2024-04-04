@@ -6,15 +6,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collector;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.floodlightcontroller.packet.IPv4;
 
 import edu.wisc.cs.sdn.vnet.Iface;
+import edu.wisc.cs.sdn.vnet.utils.PeriodicTask;
 
 import static java.lang.Integer.MIN_VALUE;
 import static java.lang.Integer.bitCount;
@@ -25,14 +24,45 @@ import static java.lang.Integer.bitCount;
  */
 public class RouteTable 
 {
+	/** Time after which stale entries are removed */
+	public static long timeDelta = 30000L;
+
 	/** Entries in the route table */
-	private List<RouteEntry> entries; 
+	private List<RouteEntry> entries;
+
+	/** Use RIP configuration */
+	private boolean rip;
+
+	/** Using RIP to dynamically configure Route Tables */
+    private PeriodicTask cleaner;
 	
 	/**
 	 * Initialize an empty route table.
 	 */
 	public RouteTable()
-	{ this.entries = new LinkedList<RouteEntry>(); }
+	{
+		this.entries = new LinkedList<RouteEntry>();
+		rip = false;
+		cleaner = new PeriodicTask(this::clearStaleEntries, 1000L, true);
+	}
+
+	public List<RouteEntry> getEntries() { return entries; }
+
+	/**
+	 * Enable RIP configuration
+	 */
+	public void enableRIP() {
+		rip = true;
+		cleaner.start();
+	}
+
+	/**
+	 * Disable RIP configuration
+	 */
+	public void disableRIP() {
+		rip = false;
+		cleaner.stop();
+	}
 	
 	/**
 	 * Lookup the route entry that matches a given IP address.
@@ -87,6 +117,26 @@ public class RouteTable
 
             return bestEntry.entry;
 			/*****************************************************************/
+		}
+	}
+
+	private void clearStaleEntries() {
+		synchronized(entries) {
+			final long curr = System.currentTimeMillis();
+			Predicate<Long> timeout = lastUpdate -> curr - lastUpdate > timeDelta;
+
+			entries.removeIf(entry -> {
+				if (entry == null)
+					return true;
+
+				if (entry.isPermanent())
+					return false;
+
+				if (timeout.test(entry.getLastUpdate()))
+					return true;
+
+				return false;
+			});
 		}
 	}
 	
@@ -191,9 +241,37 @@ public class RouteTable
 	 */
 	public void insert(int dstIp, int gwIp, int maskIp, Iface iface)
 	{
+		insert(dstIp, gwIp, maskIp, iface, RouteEntry.infinity, true);
+	}
+
+	/**
+	 * Add an entry to the route table.
+	 * @param dstIp destination IP
+	 * @param gwIp gateway IP
+	 * @param maskIp subnet mask
+	 * @param iface router interface out which to send packets to reach the
+	 *		destination or gateway
+	 * @param cost cost of this link
+	 * @param permanent whether or not this entry should be preserves at cleanup
+	 */
+	public void insert(int dstIp, int gwIp, int maskIp, Iface iface, int cost,
+						boolean permanent)
+	{
 		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface);
+
+		if (permanent)
+			entry.makePermanent();
+
+		if (cost < 0) {
+			throw new IllegalArgumentException(
+				"Cannot have negative costs on links!"
+			);
+		}
+
+		entry.setCost(cost);
+
 		synchronized(this.entries)
-		{ 
+		{
 			this.entries.add(entry);
 		}
 	}
@@ -225,14 +303,38 @@ public class RouteTable
 	 */
 	public boolean update(int dstIp, int maskIp, int gwIp, Iface iface)
 	{
+		return update(dstIp, maskIp, gwIp, iface, RouteEntry.infinity);
+	}
+
+	/**
+	 * Update an entry in the route table.
+	 * @param dstIP destination IP of the entry to update
+	 * @param maskIp subnet mask of the entry to update
+	 * @param gatewayAddress new gateway IP address for matching entry
+	 * @param iface new router interface for matching entry
+	 * @param cost the cost to this entry
+	 * @return true if a matching entry was found and updated, otherwise false
+	 */
+	public boolean update(int dstIp, int maskIp, int gwIp, Iface iface, int cost)
+	{
 		synchronized(this.entries)
 		{
 			RouteEntry entry = this.find(dstIp, maskIp);
 			if (null == entry) { return false; }
 			entry.setGatewayAddress(gwIp);
 			entry.setInterface(iface);
+			entry.setCost(cost);
 		}
 		return true;
+	}
+
+	/**
+	 * Clears all entries in the route table.
+	 */
+	public void clear() {
+		synchronized(this.entries) {
+			this.entries.clear();
+		}
 	}
 
 	/**
