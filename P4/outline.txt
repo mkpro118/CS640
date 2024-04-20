@@ -22,7 +22,7 @@ classes
 
     Reciever (Server)
         |
-        |-- Has a ServerDatagramSocket on given config
+        |-- Has a DatagramSocket on given config
         |-- Do some stuff
 
     Sender (Client)
