@@ -415,10 +415,10 @@ def gen_topo(n_hosts: Optional[int] = None,
 
 
 if __name__ == '__main__':
-    # topo = gen_topo(n_hosts=12, n_routers=14, density=.2)
+    topo = gen_topo(n_hosts=0, n_routers=10, density=.1)
     # topo.visualize()
-    # topo.ensure_connected()
-    topo = Topo.load('P3/topos/cursed.topo')
+    topo.ensure_connected()
+    # topo = Topo.load('P3/topos/cursed.topo')
     print('Hosts', topo.n_hosts)
     print(*topo.hosts, sep='\n')
     print('\nRouters', topo.n_routers)
