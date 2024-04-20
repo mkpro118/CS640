@@ -33,3 +33,30 @@ classes
 
     RecvConfig -> record
     SendConfig -> record
+
+--------------------------------------
+
+classes
+    TCPPacket
+        Serialize/Deserialize
+        Checksum
+
+    TCPend -> Main class
+        Send and recv packets
+
+Functionality
+    Sender's side:
+        Sliding window
+        Calculate checksum
+        Retransmission of unACKed packets
+
+    Reciever's side:
+        Validate the checksum
+
+byte[cws][mtu]
+{
+    { ----- TCP Packet -----} 4
+    { ----- TCP Packet -----} 5
+    { ----- TCP Packet -----} 6
+    { ----- TCP Packet -----} 3
+}
