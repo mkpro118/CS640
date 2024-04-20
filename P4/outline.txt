@@ -20,7 +20,7 @@ classes
                 |-- Use Receiver
                 |-- Use Sender
 
-    Reciever (Server)
+    Receiver (Server)
         |
         |-- Has a DatagramSocket on given config
         |-- Do some stuff
@@ -55,8 +55,8 @@ Functionality
 
 byte[cws][mtu]
 {
-    { ----- TCP Packet -----} 4
-    { ----- TCP Packet -----} 5
-    { ----- TCP Packet -----} 6
-    { ----- TCP Packet -----} 3
+    { ----- TCP Packet ----- } 4
+    { ----- TCP Packet ----- } 5
+    { ----- TCP Packet ----- } 6
+    { ----- TCP Packet ----- } 3
 }
