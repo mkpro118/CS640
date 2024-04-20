@@ -1,0 +1,3 @@
+class TCPPacket implements ITCPPacket {
+
+}
