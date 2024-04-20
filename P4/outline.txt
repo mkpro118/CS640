@@ -1,0 +1,35 @@
+classes
+    TCPPacket
+        Constructor (byte[] data)
+        Serialize/Deserialize
+        Checksum
+
+        serialize -> byte[]
+        deserialize: byte[] -> TCPPacket
+
+        checksum: -> short
+        Byte Sequence Number : int
+        Acknowledgment : int
+        Timestamp : long
+        Length: int
+        Flags -> last 3 bits of length (S F A)
+
+    TCPend
+        |
+        |--- ArgParse
+                |-- Use Receiver
+                |-- Use Sender
+
+    Reciever (Server)
+        |
+        |-- Has a ServerDatagramSocket on given config
+        |-- Do some stuff
+
+    Sender (Client)
+        |
+        |-- Connects to Server given Remote IP and Remote Port
+        |-- Do some stuff
+
+
+    RecvConfig -> record
+    SendConfig -> record
