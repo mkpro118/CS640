@@ -1,13 +1,13 @@
 import java.util.Arrays;
 
 public class TCPPacket implements ITCPPacket {
-    private final int sequenceNumber;
-    private final int acknowledgement;
+    private int sequenceNumber;
+    private int acknowledgement;
     private long timeStamp;
     private int length;
     private short checksum;
     private byte[] payload;
-
+    private boolean init;
 
     // Maximum segment size
     private static int MSS;
@@ -28,22 +28,6 @@ public class TCPPacket implements ITCPPacket {
         MASK = 0xFFL;
     }
 
-    public TCPPacket(final int seqNo, final int ack) {
-        if (MSS == 0)
-            throw new IllegalStateException("Set MSS before creating packets");
-
-        sequenceNumber = seqNo;
-        acknowledgement = ack;
-        payload = new byte[0];
-        length = 0;
-    }
-
-    public int getSequenceNumber() { return sequenceNumber; }
-
-    public int getAcknowledgement() { return acknowledgement; }
-
-    public long getTimeStamp() { return timeStamp; }
-
     public static void setMSS(int mss) {
         if (mss <= HEADER_SIZE)
             throw new IllegalArgumentException(
@@ -52,6 +36,37 @@ public class TCPPacket implements ITCPPacket {
         MSS = mss;
     }
 
+    public TCPPacket() {
+        init = false;
+    }
+
+    public TCPPacket(final int seqNo, final int ack) {
+        if (MSS == 0)
+            throw new IllegalStateException("Set MSS before creating packets");
+
+        sequenceNumber = seqNo;
+        acknowledgement = ack;
+        payload = new byte[0];
+        length = 0;
+        init = true;
+    }
+
+    @Override
+    public int getSequenceNumber() {
+        return sequenceNumber;
+    }
+
+    @Override
+    public int getAcknowledgement() {
+        return acknowledgement;
+    }
+
+    @Override
+    public long getTimeStamp() {
+        return timeStamp;
+    }
+
+    @Override
     public void setPayload(byte[] payload) {
         if (payload.length + HEADER_SIZE > MSS)
             throw new AssertionError(
@@ -64,8 +79,12 @@ public class TCPPacket implements ITCPPacket {
         length |= payload.length << 3;
     }
 
-    public byte[] getPayload() { return this.payload; }
+    @Override
+    public byte[] getPayload() {
+        return this.payload;
+    }
 
+    @Override
     public void setFlag(TCPFlag flag, boolean on) {
         if (on)
             length |= flag.mask;
@@ -73,12 +92,22 @@ public class TCPPacket implements ITCPPacket {
             length &= ~flag.mask;
     }
 
-    public boolean isSyn() { return (length & TCPFlag.SYN.mask) != 0; }
+    @Override
+    public boolean isSyn() {
+        return (length & TCPFlag.SYN.mask) != 0;
+    }
 
-    public boolean isAck() { return (length & TCPFlag.ACK.mask) != 0; }
+    @Override
+    public boolean isAck() {
+        return (length & TCPFlag.ACK.mask) != 0;
+    }
 
-    public boolean isFin() { return (length & TCPFlag.FIN.mask) != 0; }
+    @Override
+    public boolean isFin() {
+        return (length & TCPFlag.FIN.mask) != 0;
+    }
 
+    @Override
     public byte[] serialize() {
         int pos = 0;
 
@@ -104,42 +133,98 @@ public class TCPPacket implements ITCPPacket {
         return packet;
     }
 
+    @Override
     public ITCPPacket deserialize(byte[] packet) {
+        byte[] buf = new byte[8];
+        int pos = 0;
 
-        return null;
+        System.arraycopy(packet, pos, buf, 0, 4);
+        sequenceNumber = intFromBytes(buf);
+
+        pos += 4; // Move to ack
+        System.arraycopy(packet, pos, buf, 0, 4);
+        acknowledgement = intFromBytes(buf);
+
+        pos += 4; // Move to timestamp
+        System.arraycopy(packet, pos, buf, 0, 8);
+        timeStamp = longFromBytes(buf);
+
+        pos += 8; // Move to length
+        System.arraycopy(packet, pos, buf, 0, 4);
+        length = intFromBytes(buf);
+
+        pos += 6; // +4 for length, +2 for the `All Zeros`
+        System.arraycopy(packet, pos, buf, 0, 2);
+        checksum = shortFromBytes(buf);
+
+        pos += 2; // Move to Payload
+        if (packet.length - pos < length >> 3)
+            throw new IllegalStateException();
+
+        payload = new byte[length >> 3];
+        System.arraycopy(packet, pos, payload, 0, payload.length);
+
+        return this;
     }
 
+    @Override
     public short checksum() {
         return 0;
     }
 
-    private final static byte[] toBytes(long val, int retSize) {
-        final byte[] arr = new byte[retSize];
+    @Override
+    public String toString() {
+        return String.format(
+            "TCP(seqNo=%d, ack=%d, timestamp=%d, length=%d, flags=%s%s%s)",
+            sequenceNumber,
+            acknowledgement,
+            timeStamp,
+            length >> 3,
+            isSyn() ? "S" : "_",
+            isFin() ? "F" : "_",
+            isAck() ? "A" : "_"
+        );
+    }
+
+    private final static long longFromBytes(byte[] val, int nBytes) {
+        long res = 0;
+        for (int i = 0; i < nBytes; i++)
+            res = (res << 8) + (val[i] & MASK);
+        return res;
+    }
+
+    private final static short shortFromBytes(byte[] val) {
+        return (short) longFromBytes(val, 2);
+    }
+
+    private final static int intFromBytes(byte[] val) {
+        return (int) longFromBytes(val, 4);
+    }
+
+    private final static long longFromBytes(byte[] val) {
+        return longFromBytes(val, 8);
+    }
+
+    private final static byte[] toBytes(long val, int nBytes) {
+        final byte[] arr = new byte[nBytes];
 
         for (int i = 0; i < arr.length; i++) {
-            int shift = (8 * (retSize - i - 1));
+            int shift = (8 * (nBytes - i - 1));
             arr[i] = (byte) ((val & (MASK << shift)) >> shift);
         }
 
         return arr;
     }
 
-    private final static byte[] toBytes(short val) { return toBytes(val, 2); }
+    private final static byte[] toBytes(short val) {
+        return toBytes(val, 2);
+    }
 
-    private final static byte[] toBytes(int val) { return toBytes(val, 4); }
+    private final static byte[] toBytes(int val) {
+        return toBytes(val, 4);
+    }
 
-    private final static byte[] toBytes(long val) { return toBytes(val, 8); }
-
-    public static void main(String[] args) {
-        TCPPacket.setMSS(1500);
-        TCPPacket packet = new TCPPacket(0, 0);
-        packet.setPayload("Hello World!".getBytes());
-
-        byte[] bytes = packet.serialize();
-        for (int i = 0; i < bytes.length; i += 4) {
-            byte[] word = new byte[4];
-            System.arraycopy(bytes, i, word, 0, Math.min(bytes.length - i, word.length));
-            System.out.println(Arrays.toString(word));
-        }
+    private final static byte[] toBytes(long val) {
+        return toBytes(val, 8);
     }
 }
