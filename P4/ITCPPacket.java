@@ -1,5 +1,6 @@
 public interface ITCPPacket {
-    public short checksum();
+    public short getChecksum();
+    public void setChecksum(short checksum);
     public int getSequenceNumber();
     public int getAcknowledgement();
     public long getTimeStamp();
