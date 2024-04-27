@@ -18,14 +18,42 @@ public class TCPPacket implements ITCPPacket {
     // 2 bytes of all zeros as used in the given TCP Header
     private final static byte[] ALL_ZEROS;
 
+    // Sizes of Header fields in bytes
+    private final static int SEQUENCE_NUMBER_SIZE;
+    private final static int ACKNOWLEDGEMENT_SIZE;
+    private final static int TIMESTAMP_SIZE;
+    private final static int LENGTH_SIZE;
+    private final static int ALL_ZEROS_SIZE;
+    private final static int CHECKSUM_SIZE;
+
+    // Length shift in header
+    private final static int LENGTH_SHIFT;
+
     // Mask to extract bytes
-    private final static long MASK;
+    private final static long BYTE_MASK;
+
+    // Flags mask
+    private final static int FLAGS_MASK;
+
+    // Mask to extract the 17th bit for checksum computation
+    private final static int BIT_17_MASK = 0x10000;
+
+    // Shift to add the carry over 17th bit
+    private final static int BIT_17_SHIFT = 0x10;
 
     static {
-        MSS = 0;
-        HEADER_SIZE = 24;
-        ALL_ZEROS = new byte[]{0, 0};
-        MASK = 0xFFL;
+        MSS = 0x0;
+        HEADER_SIZE = 0x18;
+        ALL_ZEROS = new byte[]{0x0, 0x0};
+        BYTE_MASK = 0xFFL;
+        SEQUENCE_NUMBER_SIZE = 0x4;
+        ACKNOWLEDGEMENT_SIZE = 0x4;
+        TIMESTAMP_SIZE = 0x8;
+        LENGTH_SIZE = 0x4;
+        ALL_ZEROS_SIZE = 0x2;
+        CHECKSUM_SIZE = 0x2;
+        FLAGS_MASK = TCPFlag.SYN.mask | TCPFlag.FIN.mask | TCPFlag.ACK.mask;
+        LENGTH_SHIFT = 3;
     }
 
     public static void setMSS(int mss) {
@@ -48,6 +76,7 @@ public class TCPPacket implements ITCPPacket {
         acknowledgement = ack;
         payload = new byte[0];
         length = 0;
+        checksum = 0;
         init = true;
     }
 
@@ -75,8 +104,8 @@ public class TCPPacket implements ITCPPacket {
               + ". Need to reserve at least " + HEADER_SIZE
               + " bytes for TCP Header.");
         this.payload = payload;
-        length &= 0b111;
-        length |= payload.length << 3;
+        length &= FLAGS_MASK;
+        length |= payload.length << LENGTH_SHIFT;
     }
 
     @Override
@@ -119,7 +148,7 @@ public class TCPPacket implements ITCPPacket {
             toBytes(timeStamp = System.nanoTime()),  // 8 bytes
             toBytes(length),  // 4 bytes, contains SFA flags
             ALL_ZEROS,  // 2 bytes
-            toBytes(checksum()),  // 2 bytes
+            toBytes(checksum),  // 2 bytes
         };
 
         // Write out the header.
@@ -138,38 +167,43 @@ public class TCPPacket implements ITCPPacket {
         byte[] buf = new byte[8];
         int pos = 0;
 
-        System.arraycopy(packet, pos, buf, 0, 4);
+        System.arraycopy(packet, pos, buf, 0, SEQUENCE_NUMBER_SIZE);
         sequenceNumber = intFromBytes(buf);
 
-        pos += 4; // Move to ack
-        System.arraycopy(packet, pos, buf, 0, 4);
+        pos += SEQUENCE_NUMBER_SIZE; // Move to ack
+        System.arraycopy(packet, pos, buf, 0, ACKNOWLEDGEMENT_SIZE);
         acknowledgement = intFromBytes(buf);
 
-        pos += 4; // Move to timestamp
-        System.arraycopy(packet, pos, buf, 0, 8);
+        pos += ACKNOWLEDGEMENT_SIZE; // Move to timestamp
+        System.arraycopy(packet, pos, buf, 0, TIMESTAMP_SIZE);
         timeStamp = longFromBytes(buf);
 
-        pos += 8; // Move to length
-        System.arraycopy(packet, pos, buf, 0, 4);
+        pos += TIMESTAMP_SIZE; // Move to length
+        System.arraycopy(packet, pos, buf, 0, LENGTH_SIZE);
         length = intFromBytes(buf);
 
-        pos += 6; // +4 for length, +2 for the `All Zeros`
-        System.arraycopy(packet, pos, buf, 0, 2);
+        pos += LENGTH_SIZE + ALL_ZEROS_SIZE; // Move to checksum
+        System.arraycopy(packet, pos, buf, 0, CHECKSUM_SIZE);
         checksum = shortFromBytes(buf);
 
-        pos += 2; // Move to Payload
-        if (packet.length - pos < length >> 3)
+        pos += CHECKSUM_SIZE; // Move to Payload
+        if (packet.length - pos < length >> LENGTH_SHIFT)
             throw new IllegalStateException();
 
-        payload = new byte[length >> 3];
+        payload = new byte[length >> LENGTH_SHIFT];
         System.arraycopy(packet, pos, payload, 0, payload.length);
 
         return this;
     }
 
     @Override
-    public short checksum() {
-        return 0;
+    public short getChecksum() {
+        return checksum;
+    }
+
+    @Override
+    public void setChecksum(short checksum) {
+        this.checksum = checksum;
     }
 
     @Override
@@ -189,7 +223,7 @@ public class TCPPacket implements ITCPPacket {
     private final static long longFromBytes(byte[] val, int nBytes) {
         long res = 0;
         for (int i = 0; i < nBytes; i++)
-            res = (res << 8) + (val[i] & MASK);
+            res = (res << 8) + (val[i] & BYTE_MASK);
         return res;
     }
 
@@ -210,7 +244,7 @@ public class TCPPacket implements ITCPPacket {
 
         for (int i = 0; i < arr.length; i++) {
             int shift = (8 * (nBytes - i - 1));
-            arr[i] = (byte) ((val & (MASK << shift)) >> shift);
+            arr[i] = (byte) ((val & (BYTE_MASK << shift)) >> shift);
         }
 
         return arr;
@@ -226,5 +260,10 @@ public class TCPPacket implements ITCPPacket {
 
     private final static byte[] toBytes(long val) {
         return toBytes(val, 8);
+    }
+
+    private static final short checksumAdd(short x, short y) {
+        int r = x + y;
+        return (short) (r + ((r & BIT_17_MASK) >> BIT_17_SHIFT));
     }
 }
