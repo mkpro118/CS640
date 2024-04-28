@@ -8,6 +8,7 @@ public class TCPPacket implements ITCPPacket {
     private short checksum;
     private byte[] payload;
     private boolean init;
+    private short internalChecksum;
 
     // Maximum segment size
     private static int MSS;
@@ -25,6 +26,7 @@ public class TCPPacket implements ITCPPacket {
     private final static int LENGTH_SIZE;
     private final static int ALL_ZEROS_SIZE;
     private final static int CHECKSUM_SIZE;
+    private final static int CHECKSUM_OFFSET;
 
     // Length shift in header
     private final static int LENGTH_SHIFT;
@@ -54,6 +56,8 @@ public class TCPPacket implements ITCPPacket {
         CHECKSUM_SIZE = 0x2;
         FLAGS_MASK = TCPFlag.SYN.mask | TCPFlag.FIN.mask | TCPFlag.ACK.mask;
         LENGTH_SHIFT = 3;
+        CHECKSUM_OFFSET = (SEQUENCE_NUMBER_SIZE + ACKNOWLEDGEMENT_SIZE
+                               + TIMESTAMP_SIZE + ALL_ZEROS_SIZE);
     }
 
     public static void setMSS(int mss) {
@@ -78,6 +82,7 @@ public class TCPPacket implements ITCPPacket {
         length = 0;
         checksum = 0;
         init = true;
+        internalChecksum = 0;
     }
 
     @Override
@@ -148,7 +153,7 @@ public class TCPPacket implements ITCPPacket {
             toBytes(timeStamp = System.nanoTime()),  // 8 bytes
             toBytes(length),  // 4 bytes, contains SFA flags
             ALL_ZEROS,  // 2 bytes
-            toBytes(checksum),  // 2 bytes
+            toBytes(checksum),  // 2 bytes (checksum is zero before computation)
         };
 
         // Write out the header.
@@ -159,6 +164,9 @@ public class TCPPacket implements ITCPPacket {
 
         System.arraycopy(payload, 0, packet, pos, payload.length);
 
+        if (checksum == 0 || checksum != internalChecksum)
+            internalChecksum = checksum = computeChecksum(packet);
+
         return packet;
     }
 
@@ -167,24 +175,19 @@ public class TCPPacket implements ITCPPacket {
         byte[] buf = new byte[8];
         int pos = 0;
 
-        System.arraycopy(packet, pos, buf, 0, SEQUENCE_NUMBER_SIZE);
-        sequenceNumber = intFromBytes(buf);
+        sequenceNumber = intFromBytes(packet, pos);
 
         pos += SEQUENCE_NUMBER_SIZE; // Move to ack
-        System.arraycopy(packet, pos, buf, 0, ACKNOWLEDGEMENT_SIZE);
-        acknowledgement = intFromBytes(buf);
+        acknowledgement = intFromBytes(buf, pos);
 
         pos += ACKNOWLEDGEMENT_SIZE; // Move to timestamp
-        System.arraycopy(packet, pos, buf, 0, TIMESTAMP_SIZE);
-        timeStamp = longFromBytes(buf);
+        timeStamp = longFromBytes(buf, pos);
 
         pos += TIMESTAMP_SIZE; // Move to length
-        System.arraycopy(packet, pos, buf, 0, LENGTH_SIZE);
-        length = intFromBytes(buf);
+        length = intFromBytes(buf, pos);
 
         pos += LENGTH_SIZE + ALL_ZEROS_SIZE; // Move to checksum
-        System.arraycopy(packet, pos, buf, 0, CHECKSUM_SIZE);
-        checksum = shortFromBytes(buf);
+        checksum = shortFromBytes(buf, pos);
 
         pos += CHECKSUM_SIZE; // Move to Payload
         if (packet.length - pos < length >> LENGTH_SHIFT)
@@ -220,23 +223,24 @@ public class TCPPacket implements ITCPPacket {
         );
     }
 
-    private final static long longFromBytes(byte[] val, int nBytes) {
+    private final static long longFromBytes(byte[] val, int pos, int nBytes) {
         long res = 0;
-        for (int i = 0; i < nBytes; i++)
+        int end = pos + nBytes;
+        for (int i = pos; i < end; i++)
             res = (res << 8) + (val[i] & BYTE_MASK);
         return res;
     }
 
-    private final static short shortFromBytes(byte[] val) {
-        return (short) longFromBytes(val, 2);
+    private final static short shortFromBytes(byte[] val, int pos) {
+        return (short) longFromBytes(val, pos, 2);
     }
 
-    private final static int intFromBytes(byte[] val) {
-        return (int) longFromBytes(val, 4);
+    private final static int intFromBytes(byte[] val, int pos) {
+        return (int) longFromBytes(val, pos, 4);
     }
 
-    private final static long longFromBytes(byte[] val) {
-        return longFromBytes(val, 8);
+    private final static long longFromBytes(byte[] val, int pos) {
+        return longFromBytes(val, pos, 8);
     }
 
     private final static byte[] toBytes(long val, int nBytes) {
@@ -265,5 +269,27 @@ public class TCPPacket implements ITCPPacket {
     private static final short checksumAdd(short x, short y) {
         int r = x + y;
         return (short) (r + ((r & BIT_17_MASK) >> BIT_17_SHIFT));
+    }
+
+    private static final short computeChecksum(byte[] packet) {
+        // Forcefully set checksum to zero
+        System.arraycopy(ALL_ZEROS, 0, packet, CHECKSUM_OFFSET, ALL_ZEROS_SIZE);
+
+        short checksum = shortFromBytes(packet, 0);
+
+        int len = packet.length & (~1);
+
+        // For every 2 bytes
+        for (int i = 2; i < len; i += 2) {
+            checksum = checksumAdd(checksum, shortFromBytes(packet, i));
+        }
+
+        // Add extra NUL byte for padding
+        if ((packet.length & 1) == 1) {
+            short segment = shortFromBytes(new byte[]{packet[len], 0x0}, 0);
+            checksum = checksumAdd(checksum, segment);
+        }
+
+        return (short)(~checksum);
     }
 }
