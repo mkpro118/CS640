@@ -13,7 +13,7 @@ public class TCPPacket implements ITCPPacket {
     private static int MSS;
 
     // Size of the TCP Header
-    private final static int HEADER_SIZE;
+    public final static int HEADER_SIZE;
 
     // 2 bytes of all zeros as used in the given TCP Header
     private final static byte[] ALL_ZEROS;
