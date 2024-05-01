@@ -7,7 +7,6 @@ public class TCPPacket implements ITCPPacket {
     private int length;
     private short checksum;
     private byte[] payload;
-    private boolean init;
     private short internalChecksum;
 
     // Maximum segment size
@@ -68,9 +67,7 @@ public class TCPPacket implements ITCPPacket {
         MSS = mss;
     }
 
-    public TCPPacket() {
-        init = false;
-    }
+    public TCPPacket() {}
 
     public TCPPacket(final int seqNo, final int ack) {
         if (MSS == 0)
@@ -81,7 +78,6 @@ public class TCPPacket implements ITCPPacket {
         payload = new byte[0];
         length = 0;
         checksum = 0;
-        init = true;
         internalChecksum = 0;
     }
 
