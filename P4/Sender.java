@@ -13,6 +13,19 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class Sender {
+    @SuppressWarnings("serial")
+    private final static class WorkQueue extends ArrayBlockingQueue<DataSender> {
+        public WorkQueue(int size) {
+            super(size);
+        }
+
+        @Override
+        public void put(DataSender ds) throws InterruptedException {
+            super.put(ds);
+            ds.send();
+        }
+    }
+
     private final static class DataSender {
         private final Sender sender;
         private final PeriodicTask task;
@@ -158,7 +171,7 @@ public class Sender {
     private volatile long estimatedRoundTripTime;
     private volatile long estimatedDeviation;
 
-    private volatile int syn;
+    private volatile int seqNo;
     private volatile int lastSeqNo;
 
     private final BlockingQueue<DataSender> workQueue;
@@ -170,7 +183,7 @@ public class Sender {
         socket = new DatagramSocket(config.port());
         serverAddr = new InetSocketAddress(config.remoteIP(),
                                            config.remotePort());
-        workQueue = new ArrayBlockingQueue<>(config.sws());
+        workQueue = new WorkQueue(config.sws());
         isConnected = false;
         timeout = INITIAL_TIMEOUT;
 
@@ -186,8 +199,8 @@ public class Sender {
 
     public void connect() throws IOException {
         // Sequence number is 0 on SYN, ACK doesn't matter but we set it to 0.
-        syn = 0;
-        final TCPPacket packet = new TCPPacket(syn, 0);
+        seqNo = 0;
+        final TCPPacket packet = new TCPPacket(seqNo, 0);
         packet.setFlag(TCPFlag.SYN, true);
 
         byte[] buf = packet.serialize();
@@ -220,7 +233,7 @@ public class Sender {
             lastSeqNo = recvPkt.getSequenceNumber();
 
             // Syn stays the same for an ACK packet
-            TCPPacket ackPacket = new TCPPacket(syn, lastSeqNo + 1);
+            TCPPacket ackPacket = new TCPPacket(seqNo, ++lastSeqNo);
             ackPacket.setFlag(TCPFlag.ACK, true);
             buf = packet.serialize();
             len = buf.length;
@@ -234,6 +247,7 @@ public class Sender {
 
             isConnected = true;
             socket.setSoTimeout(0);
+            seqNo++;
             return;
         }
 
@@ -248,13 +262,40 @@ public class Sender {
         if (!isConnected)
             throw new IllegalStateException("Not connected!");
 
-        final int fileLen = file.length();
+        final long fileLen = file.length();
 
         final int fileChunkSize = config.mtu() - TCPPacket.HEADER_SIZE;
 
         FileInputStream reader = new FileInputStream(file);
 
+        for (int i = 0; i < fileLen; i += fileChunkSize) {
+            byte[] buf = new byte[fileChunkSize];
+            TCPPacket dataPacket = new TCPPacket(seqNo, lastSeqNo);
 
+            try {
+                reader.read(buf);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            dataPacket.setPayload(buf);
+            DataSender sender = new DataSender(this, dataPacket);
+
+            try {
+                workQueue.put(sender);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+            seqNo += fileChunkSize;
+        }
+
+        do {} while (workQueue.size() != 0);
+    }
+
+    public void close() {
+        TCPPacket finPacket = new TCPPacket(seqNo, );
     }
 
     private void recomputeTimeout(long ackTimeStamp) {
