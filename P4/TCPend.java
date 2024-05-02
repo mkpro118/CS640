@@ -1,3 +1,5 @@
+import java.io.IOException;
+
 public final class TCPend {
     public final static void main(String[] args) {
         ArgParser parser = new ArgParser();
@@ -31,15 +33,25 @@ public final class TCPend {
     }
 
     private final static void runReceiver(RecvConfig config) {
-        Receiver receiver = new Receiver(config);
-        receiver.accept();
-        receiver.start();
+        try {
+            Receiver receiver = new Receiver(config);
+            receiver.accept();
+            receiver.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     private final static void runSender(SendConfig config) {
-        Sender sender = new Sender(config);
-        sender.connect();
-        sender.sendFile();
-        sender.close();
+        try {
+            Sender sender = new Sender(config);
+            sender.connect();
+            sender.sendFile();
+            sender.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 }
