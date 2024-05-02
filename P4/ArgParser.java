@@ -3,126 +3,12 @@ import java.util.Set;
 import java.util.Map;
 import java.util.Arrays;
 
-/**
- * @author Mrigank Kumar
- *
- * Represents an option with a description, type, and value
- *
- * @param <T> the type of the option's value
- */
-class Option<T> {
-    // Description of the option
-    private String description;
-
-    // Type of the option's value
-    private Class<T> type;
-
-    // Value of the option
-    private T value;
-
-    // Indicates whether the option has been found
-    private boolean found;
-
-    /**
-     * Constructs an Option object with the specified description and type
-     * The value is set to the default value of the specified type,
-     * and found is initialized to falses
-     *
-     * @param description the description of the option
-     * @param type the type of the option's value
-     */
-    public Option(String description, Class<T> type) {
-        this.description = description;
-        this.type = type;
-        this.value = Option.getDefaultValue(type);
-        this.found = false;
-    }
-
-    /**
-     * Accessor for the description of the option
-     *
-     * @return the description of the option
-     */
-    public String getDescription() { return description; }
-
-    /**
-     * Accessor for the type of the option's value
-     *
-     * @return the type of the option's value
-     */
-    public Class<T> getType() { return type; }
-
-    /**
-     * Accessor for the value of the option
-     *
-     * @return the value of the option
-     */
-    public T getValue() { return value; }
-
-    /**
-     * Sets the value of the option and marks the option as found
-     *
-     * @param value the value to be set
-     */
-    public void setValue(T value) {
-        this.value = value;
-        this.found = true;
-    }
-
-    /**
-     * Checks whether the option has been found
-     *
-     * @return true if the option has been found, otherwise false
-     */
-    public boolean found() { return found; }
-
-    /**
-     * Retrieves the default value for the specified type
-     *
-     * @param type the type for which the default value is to be retrieved
-     * @param <T> the type parameter
-     *
-     * @return the default value for the specified type, or null if
-     *         the type is not supported
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> T getDefaultValue(Class<T> type) {
-        if (type.equals(Boolean.class))
-            return (T) Boolean.FALSE;
-
-        if (type.equals(Character.class))
-            return (T) Character.valueOf((char) 0);
-
-        if (type.equals(Byte.class))
-            return (T) Byte.valueOf((byte) 0);
-
-        if (type.equals(Short.class))
-            return (T) Short.valueOf((short) 0);
-
-        if (type.equals(Integer.class))
-            return (T) Integer.valueOf(0);
-
-        if (type.equals(Long.class))
-            return (T) Long.valueOf((long) 0);
-
-        if (type.equals(Float.class))
-            return (T) Float.valueOf((float) 0.0);
-
-        if (type.equals(Double.class))
-            return (T) Double.valueOf(0.0);
-
-        if (type.equals(String.class))
-            return (T) "";
-
-        return null;
-    }
-}
 
 /**
- * @author Mrigank Kumar
- *
  * This class provides functionality for parsing command-line arguments
  * and managing options
+ *
+ * @author Mrigank Kumar
  */
 public class ArgParser {
     /**
@@ -134,6 +20,19 @@ public class ArgParser {
         public TypeNotSupportedException() {}
 
         public TypeNotSupportedException(String msg) {
+            super(msg);
+        }
+    }
+
+    /**
+     * Custom exception class for indicating no option to alias
+     * during argument parsing
+     */
+    @SuppressWarnings("serial")
+    private static class InvalidAliasException extends RuntimeException {
+        public InvalidAliasException() {}
+
+        public InvalidAliasException(String msg) {
             super(msg);
         }
     }
@@ -169,11 +68,19 @@ public class ArgParser {
     // Map to store defined options
     private Map<String, Option<?>> options;
 
+    // Map to store known aliases
+    private final Map<String, String> aliases;
+
+    // Most recently added option
+    private String recent;
+
     /**
      * Constructs an ArgParser object with no options defined initially
      */
     public ArgParser() {
         options = new HashMap<>();
+        aliases = new HashMap<>();
+        recent = null;
     }
 
     /**
@@ -185,8 +92,7 @@ public class ArgParser {
      * @return the ArgParser object for method chaining
      */
     public ArgParser addOption(String key, String type) {
-        addOption(key, getClass(type), null);
-        return this;
+        return addOption(key, getClass(type), null);
     }
 
     /**
@@ -199,8 +105,7 @@ public class ArgParser {
      * @return the ArgParser object for method chaining
      */
     public <T> ArgParser addOption(String key, Class<T> type) {
-        addOption(key, type, null);
-        return this;
+        return addOption(key, type, null);
     }
 
     /**
@@ -214,8 +119,7 @@ public class ArgParser {
      * @return the ArgParser object for method chaining
      */
     public ArgParser addOption(String key, String type, String description) {
-        addOption(key, getClass(type), description);
-        return this;
+        return addOption(key, getClass(type), description);
     }
 
     /**
@@ -231,6 +135,23 @@ public class ArgParser {
      */
     public <T> ArgParser addOption(String key, Class<T> type, String description) {
         options.put(key, new Option<T>(description, type));
+        recent = key;
+        return this;
+    }
+
+    /**
+     * Aliases the last added option with the given key
+     *
+     * @param  key the alias to add
+     *
+     * @return the ArgParser object for method chaining
+     */
+    public ArgParser alias(String key) {
+        if (recent == null)
+            throw new InvalidAliasException("No option to alias");
+
+        getOption(recent).addAlias(key);
+        aliases.put(key, recent);
         return this;
     }
 
@@ -244,8 +165,26 @@ public class ArgParser {
      */
     @SuppressWarnings("unchecked")
     public <T> T get(String key) {
+        key = aliases.getOrDefault(key, key);
         Option<T> option = (Option<T>) options.get(key);
         return option != null ? option.getValue() : null;
+    }
+
+    /**
+     * Retrieves the value of the option associated with the specified key, or
+     * returns a default value if the key is not found
+     *
+     * @param key the key of the option
+     * @param <T> the type parameter of the option's value
+     *
+     * @return the value of the option, or the default value
+     *         if the option does not exist
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getOrDefault(String key, T defaultValue) {
+        key = aliases.getOrDefault(key, key);
+        Option<T> option = (Option<T>) options.get(key);
+        return option.found() ? option.getValue() : defaultValue;
     }
 
     /**
@@ -255,7 +194,10 @@ public class ArgParser {
      *
      * @return the option object, or null if the option does not exist
      */
-    public Option<?> getOption(String key) { return options.get(key); }
+    public Option<?> getOption(String key) {
+        key = aliases.getOrDefault(key, key);
+        return options.get(key);
+    }
 
     /**
      * Retrieves the set of keys for all defined options
@@ -283,7 +225,9 @@ public class ArgParser {
     @SuppressWarnings("unchecked")
     public void parse(String[] args) {
         for (int i = 0; i < args.length; i++) {
-            Option<?> option = options.get(args[i]);
+            String key = args[i];
+            key = aliases.getOrDefault(key, key);
+            Option<?> option = options.get(key);
 
             // If no associated option is found, ignore
             if (option == null)

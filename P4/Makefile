@@ -4,7 +4,8 @@ BIN_DIR := bin
 CP := -cp $(BIN_DIR)
 FLAGS = -d $(BIN_DIR) $(CP)
 
-CLASSES := bin/ArgParser.class\
+CLASSES := bin/Option.class\
+           bin/ArgParser.class\
            bin/PeriodicTask.class\
            bin/ITCPPacket.class\
            bin/TCPPacket.class\
@@ -18,6 +19,9 @@ RECEIVER_OPTIONS := -p 23450 -m 1500 -c 4 -f out.txt
 
 all : $(CLASSES) bin/TCPend.class
 .PHONY : all
+
+bin/Option.class: Option.java
+	$(JC) $(FLAGS) Option.java
 
 bin/ArgParser.class: ArgParser.java
 	$(JC) $(FLAGS) ArgParser.java

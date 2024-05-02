@@ -266,6 +266,10 @@ public class Sender {
         throw new IllegalStateException("Failed to connect!");
     }
 
+    public void sendFile() throws FileNotFoundException {
+        send(config.fileName());
+    }
+
     public void send(String filename) throws FileNotFoundException {
         send(new File(filename));
     }
