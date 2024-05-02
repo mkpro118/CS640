@@ -34,8 +34,9 @@ class Receiver {
             while (true) {
                 DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length);
                 datagramSocket.receive(datagramPacket);
+                TCPPacket tcpPacket = new TCPPacket();
 
-                TCPPacket tcpPacket = TCPPacket.deserialize(datagramPacket.getData());
+                tcpPacket = tcpPacket.deserialize(datagramPacket.getData());
 
                 if (tcpPacket == null) {
                     System.out.println("Invalid packet received");
