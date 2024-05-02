@@ -56,7 +56,6 @@ public class Recv implements IServer {
             serverAddr = packet.getSocketAddress();
 
             synPacket = (TCPPacket) synPacket.deserialize(buf);
-            System.out.println(":accept: Received (synPacket) " + synPacket);
             if (synPacket.isSyn())
                 break;
         }
@@ -72,7 +71,6 @@ public class Recv implements IServer {
             buf = synAckPacket.serialize();
             packet = new DatagramPacket(buf, buf.length, serverAddr);
 
-            System.out.println(":accept: Sending (synAckPacket) " + synAckPacket);
             socket.send(packet);
 
             // GET ACK
@@ -89,7 +87,6 @@ public class Recv implements IServer {
 
             TCPPacket recvAckPacket = new TCPPacket();
             recvAckPacket = (TCPPacket) recvAckPacket.deserialize(buf);
-            System.out.println(":accept: Received (recvAckPacket) " + recvAckPacket);
 
             if (recvAckPacket.isSyn()) {
                 nextByte = synPacket.getSequenceNumber() + 1;
@@ -103,10 +100,7 @@ public class Recv implements IServer {
                 socket.setSoTimeout(0);
                 seqNo++;
                 isConnected = true;
-                System.out.println("Connection Established!");
                 return;
-            } else {
-                System.out.println("recvAckPacket.getAcknowledgement() " + recvAckPacket.getAcknowledgement());
             }
         }
 
@@ -118,7 +112,6 @@ public class Recv implements IServer {
         worker.start();
         byte[] buf;
         DatagramPacket pkt;
-        System.out.println("connect = " + isConnected);
         while (isConnected) {
             buf = new byte[config.mtu()];
             pkt = new DatagramPacket(buf, buf.length);
@@ -132,7 +125,6 @@ public class Recv implements IServer {
                 isConnected = false;
                 TCPPacket ackPacket = new TCPPacket(seqNo, nextByte);
                 ackPacket.setFlag(TCPFlag.ACK, true);
-                System.out.println("Sending FIN ACK " + ackPacket);
                 buf = ackPacket.serialize();
                 pkt = new DatagramPacket(buf, buf.length, serverAddr);
                 socket.send(pkt);
@@ -146,8 +138,6 @@ public class Recv implements IServer {
             }
 
             if (dataPacket.getSequenceNumber() != nextByte) {
-                System.out.println("Wrong Seqno, expected " + nextByte);
-                System.out.println(dataPacket);
                 continue;
             }
 
@@ -156,7 +146,6 @@ public class Recv implements IServer {
 
             TCPPacket ackPacket = new TCPPacket(seqNo, nextByte);
             ackPacket.setFlag(TCPFlag.ACK, true);
-            System.out.println("Sending ACK " + ackPacket);
             buf = ackPacket.serialize();
             pkt = new DatagramPacket(buf, buf.length, serverAddr);
             socket.send(pkt);
@@ -184,7 +173,6 @@ public class Recv implements IServer {
                 return;
             }
             byte[] buf = packet.getPayload();
-            System.out.println("length = " + packet.getPayload().length);
             try {
                 writer.write(buf);
             } catch (IOException e) {
@@ -196,19 +184,16 @@ public class Recv implements IServer {
 
     @Override
     public void close() throws IOException {
-        System.out.println("CLOSING...");
         isConnected = false;
         worker.interrupt();
 
         for (int i = 0; i < MAX_RETRIES; i++) {
             TCPPacket finAckPacket = new TCPPacket(seqNo, nextByte);
             finAckPacket.setFlag(TCPFlag.FIN, true);
-            // finAckPacket.setFlag(TCPFlag.ACK, true);
 
             byte[] buf = finAckPacket.serialize();
             DatagramPacket packet = new DatagramPacket(buf, buf.length, serverAddr);
 
-            System.out.println("SENDING " + finAckPacket);
             socket.send(packet);
 
             // GET ACK
@@ -219,7 +204,6 @@ public class Recv implements IServer {
                 DatagramPacket ackPacket = new DatagramPacket(buf, buf.length);
                 socket.receive(ackPacket);
             } catch (SocketTimeoutException e) {
-                System.out.println("TIMEOUT");
                 continue;
             }
             return;

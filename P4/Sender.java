@@ -72,8 +72,17 @@ public class Sender implements IClient {
 
         private void sendPacket() {
             try {
-                System.out.println("timeout = " + sender.timeout);
-                System.out.println(":DataSender.sendPacket: Sending " + packet);
+                System.out.printf(FORMAT,
+                    "snd",
+                    (System.nanoTime() - sender.startTime) / 1e6,
+                    packet.isSyn() ? "S" : "-",
+                    packet.isAck() ? "A" : "-",
+                    packet.isFin() ? "F" : "-",
+                    packet.getPayload().length > 0 ? "D" : "-",
+                    packet.getSequenceNumber(),
+                    packet.getPayload().length,
+                    packet.getAcknowledgement()
+                );
                 sender.socket.send(dPacket);
             } catch (IOException e) {
                 // Something went wrong!
@@ -116,14 +125,20 @@ public class Sender implements IClient {
 
                 TCPPacket ackPacket = (new TCPPacket());
                 ackPacket = (TCPPacket) ackPacket.deserialize(buf);
-
-                System.out.println("--------------------------------------");
-                System.out.println("\n:AckListener:  recvd " + ackPacket);
-                System.out.println("--------------------------------------");
+                System.out.printf(FORMAT,
+                    "rcv",
+                    (System.nanoTime() - sender.startTime) / 1e6,
+                    ackPacket.isSyn() ? "S" : "-",
+                    ackPacket.isAck() ? "A" : "-",
+                    ackPacket.isFin() ? "F" : "-",
+                    ackPacket.getPayload().length > 0 ? "D" : "-",
+                    ackPacket.getSequenceNumber(),
+                    ackPacket.getPayload().length,
+                    ackPacket.getAcknowledgement()
+                );
 
                 if (ackPacket.isFin()) {
                     stop();
-                    System.out.println("Got FIN!!!");
                     synchronized (sender.monitor) {
                         sender.monitor.notify();
                     }
@@ -175,16 +190,16 @@ public class Sender implements IClient {
 
                 sender.recomputeTimeout(ackTimestamp);
             }
-            System.out.println("AckListener going down!");
         }
 
         public void start() { active = true; }
 
-        public void stop() { active = false; System.out.println("AckListener stopped!!");}
+        public void stop() { active = false; }
     }
 
     private static final int MAX_RETRIES = 0x10;
     private static final int INITIAL_TIMEOUT = 0x1388;
+    private static final String FORMAT = "%s %.2f %s %s %s %s %d %d %d\n";
 
     private final SendConfig config;
     private final DatagramSocket socket;
@@ -192,6 +207,7 @@ public class Sender implements IClient {
     private final AckListener ackListener;
     private final Thread ackListenerThread;
 
+    private final double startTime;
     // Re-Transmission Timeout
     private volatile long timeout;
     private volatile long estimatedRoundTripTime;
@@ -209,6 +225,7 @@ public class Sender implements IClient {
     private Object monitor;
 
     public Sender(SendConfig config) throws IOException {
+        startTime = System.nanoTime();
         this.config = config;
         socket = new DatagramSocket(config.port());
         serverAddr = new InetSocketAddress(config.remoteIP(),
@@ -239,7 +256,6 @@ public class Sender implements IClient {
 
         // Try upto MAX_RETRIES times
         for (int i = 0; i < MAX_RETRIES; i++) {
-            System.out.println("RETRYING");
             final TCPPacket packet = new TCPPacket(seqNo, 0);
             packet.setFlag(TCPFlag.SYN, true);
 
@@ -248,7 +264,6 @@ public class Sender implements IClient {
 
             DatagramPacket pkt;
             pkt = new DatagramPacket(buf, len, serverAddr);
-            System.out.println(":connect: Sending (packet) " + packet);
             socket.send(pkt);  // Part 1 of 3-way handshake
 
             buf = new byte[config.mtu()];
@@ -259,16 +274,12 @@ public class Sender implements IClient {
             try {
                 socket.receive(pkt);  // Part 2 of 3-way handshake
             } catch (SocketTimeoutException e) {
-                System.out.println("INITIAL_TIMEOUT " + INITIAL_TIMEOUT);
-                e.printStackTrace();
                 continue;
             }
 
             TCPPacket recvPkt = (TCPPacket)(new TCPPacket()).deserialize(buf);
-            System.out.println(":connect: Received (recvPkt) " + recvPkt);
 
             if (!recvPkt.isSyn() || !recvPkt.isAck()) {
-                System.out.println("Wrong packet!");
                 continue;
             }
 
@@ -281,19 +292,16 @@ public class Sender implements IClient {
             len = buf.length;
             pkt = new DatagramPacket(buf, len, serverAddr);
 
-            System.out.println(":connect: Sending (ackPacket) " + ackPacket);
             socket.send(pkt);  // Part 3 of 3-way handshake
 
             estimatedRoundTripTime = System.nanoTime() - recvPkt.getTimeStamp();
             estimatedDeviation = 0;
 
             timeout = 2 * estimatedRoundTripTime;
-            System.out.println("timeout = " + timeout);
 
             isConnected = true;
             socket.setSoTimeout(0);
             seqNo++;
-            System.out.println("Connection Established!");
             return;
         }
 
@@ -354,25 +362,15 @@ public class Sender implements IClient {
     }
 
     public void close() {
-
-        try {
-            System.out.println("workQueue.size() " + workQueue.size());
-            System.out.println("CLosing ....");
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-
-        }
         TCPPacket pkt = new TCPPacket(seqNo++, lastSeqNo);
         pkt.setFlag(TCPFlag.FIN, true);
 
         DataSender sender = new DataSender(this, pkt);
         synchronized (monitor) {
-            System.out.println("Sent fin");
             sender.send();
         }
 
         synchronized (monitor) {
-            System.out.println("Waiting for FIN from Receiver...");
             try {
                 monitor.wait();
             } catch (InterruptedException e) {
