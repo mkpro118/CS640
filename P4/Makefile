@@ -1,6 +1,6 @@
 JC = javac
 JV = java
-BIN_DIR := .
+BIN_DIR := src
 CP := -cp $(BIN_DIR)
 FLAGS = -d $(BIN_DIR) $(CP)
 
@@ -20,56 +20,56 @@ CLASSES := src/Option.class\
 SENDER_OPTIONS := -p 23453 -s 127.0.01 -a 23452 -f tests/in.txt -m 500 -c 4
 RECEIVER_OPTIONS := -p 23452 -m 500 -c 4 -f tests/out.txt
 
-all : $(CLASSES) bin/TCPend.class
+all : $(CLASSES) src/TCPend.class
 .PHONY : all
 
-bin/Option.class: Option.java
-	$(JC) $(FLAGS) Option.java
+src/Option.class: src/Option.java
+	$(JC) $(FLAGS) src/Option.java
 
-bin/ArgParser.class: ArgParser.java
-	$(JC) $(FLAGS) ArgParser.java
+src/ArgParser.class: src/ArgParser.java
+	$(JC) $(FLAGS) src/ArgParser.java
 
-bin/PeriodicTask.class: PeriodicTask.java
-	$(JC) $(FLAGS) PeriodicTask.java
+src/PeriodicTask.class: src/PeriodicTask.java
+	$(JC) $(FLAGS) src/PeriodicTask.java
 
-bin/IClient.class: IClient.java
-	$(JC) $(FLAGS) IClient.java
+src/IClient.class: src/IClient.java
+	$(JC) $(FLAGS) src/IClient.java
 
-bin/IServer.class: IServer.java
-	$(JC) $(FLAGS) IServer.java
+src/IServer.class: src/IServer.java
+	$(JC) $(FLAGS) src/IServer.java
 
-bin/ITCPPacket.class: ITCPPacket.java bin/TCPFlag.class
-	$(JC) $(FLAGS) ITCPPacket.java
+src/ITCPPacket.class: src/ITCPPacket.java src/TCPFlag.class
+	$(JC) $(FLAGS) src/ITCPPacket.java
 
-bin/TCPPacket.class: TCPPacket.java bin/TCPFlag.class
-	$(JC) $(FLAGS) TCPPacket.java
+src/TCPPacket.class: src/TCPPacket.java src/TCPFlag.class
+	$(JC) $(FLAGS) src/TCPPacket.java
 
-bin/Receiver.class: Receiver.java
-	$(JC) $(FLAGS) Receiver.java
+src/Receiver.class: src/Receiver.java
+	$(JC) $(FLAGS) src/Receiver.java
 
-bin/Recv.class: Recv.java
-	$(JC) $(FLAGS) Recv.java
+src/Recv.class: src/Recv.java
+	$(JC) $(FLAGS) src/Recv.java
 
-bin/Sender.class: Sender.java
-	$(JC) $(FLAGS) Sender.java
+src/Sender.class: src/Sender.java
+	$(JC) $(FLAGS) src/Sender.java
 
-bin/RecvConfig.class: RecvConfig.java
-	$(JC) $(FLAGS) RecvConfig.java
+src/RecvConfig.class: src/RecvConfig.java
+	$(JC) $(FLAGS) src/RecvConfig.java
 
-bin/SendConfig.class: SendConfig.java
-	$(JC) $(FLAGS) SendConfig.java
+src/SendConfig.class: src/SendConfig.java
+	$(JC) $(FLAGS) src/SendConfig.java
 
-bin/TCPFlag.class: TCPFlag.java
-	$(JC) $(FLAGS) TCPFlag.java
+src/TCPFlag.class: src/TCPFlag.java
+	$(JC) $(FLAGS) src/TCPFlag.java
 
-bin/TCPend.class: TCPend.java $(CLASSES)
-	$(JC) $(FLAGS) TCPend.java
+src/TCPend.class: src/TCPend.java $(CLASSES)
+	$(JC) $(FLAGS) src/TCPend.java
 
-sender: bin/TCPend.class $(CLASSES)
+sender: src/TCPend.class $(CLASSES)
 	$(JV) $(CP) TCPend $(SENDER_OPTIONS)
 
-receiver: bin/TCPend.class $(CLASSES)
+receiver: src/TCPend.class $(CLASSES)
 	$(JV) $(CP) TCPend $(RECEIVER_OPTIONS)
 
 clean:
-	rm -fr bin
+	rm -fr src
