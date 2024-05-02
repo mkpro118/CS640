@@ -207,7 +207,7 @@ public class Sender implements IClient {
     private final AckListener ackListener;
     private final Thread ackListenerThread;
 
-    private final double startTime;
+    private double startTime;
     // Re-Transmission Timeout
     private volatile long timeout;
     private volatile long estimatedRoundTripTime;
@@ -225,7 +225,6 @@ public class Sender implements IClient {
     private Object monitor;
 
     public Sender(SendConfig config) throws IOException {
-        startTime = System.nanoTime();
         this.config = config;
         socket = new DatagramSocket(config.port());
         serverAddr = new InetSocketAddress(config.remoteIP(),
@@ -302,6 +301,7 @@ public class Sender implements IClient {
             isConnected = true;
             socket.setSoTimeout(0);
             seqNo++;
+            startTime = System.nanoTime();
             return;
         }
 
