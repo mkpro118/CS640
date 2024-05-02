@@ -21,6 +21,15 @@ public class Receiver {
     public Receiver(int port) {
         this.port = port;
         this.connections = new HashMap<>();
+
+        // Ensure connection closes in case of an unexpected error
+        Runtime.getRuntime().addShutdownHook(new Thread(){
+            @Override
+            public void run() {
+                if (!datagramSocket.isClosed())
+                    datagramSocket.close();
+            }
+        });
     }
 
     public void start() {
