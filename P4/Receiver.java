@@ -2,7 +2,7 @@ import java.net.*;
 import java.util.*;
 import java.io.*;
 
-class Receiver {
+public class Receiver {
     private int port;
     private DatagramSocket datagramSocket;
     private Map<SocketAddress, ConnectionState> connections;
