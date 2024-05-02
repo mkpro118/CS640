@@ -1,9 +1,12 @@
-import java.net.*;
-import java.util.*;
-import java.io.*;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Receiver {
-    private int port;
+    private RecvConfig config;
     private DatagramSocket datagramSocket;
     private Map<SocketAddress, ConnectionState> connections;
 
@@ -18,8 +21,8 @@ public class Receiver {
         }
     }
 
-    public Receiver(int port) {
-        this.port = port;
+    public Receiver(RecvConfig config) {
+        this.config = config;
         this.connections = new HashMap<>();
 
         // Ensure connection closes in case of an unexpected error
@@ -32,63 +35,63 @@ public class Receiver {
         });
     }
 
-    public void start() {
-        try {
-            // Construct and bind socket to the given port
-            datagramSocket = new DatagramSocket(port);
-            System.out.println("Datagram socket listening on port " + port);
+    public void accept() throws IOException {
 
-            byte[] buffer = new byte[1024];
+    }
 
-            while (true) {
-                DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length);
-                datagramSocket.receive(datagramPacket);
-                TCPPacket tcpPacket = new TCPPacket();
+    public void start() throws IOException {
+        // Construct and bind socket to the given port
+        datagramSocket = new DatagramSocket(config.port());
+        System.out.println("Datagram socket listening on port " + config.port());
 
-                tcpPacket = tcpPacket.deserialize(datagramPacket.getData());
+        byte[] buffer = new byte[1024];
 
-                if (tcpPacket == null) {
-                    System.out.println("Invalid packet received");
-                    continue;
-                }
+        while (true) {
+            DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length);
+            datagramSocket.receive(datagramPacket);
+            TCPPacket tcpPacket = new TCPPacket();
 
-                SocketAddress senderAddress = datagramPacket.getSocketAddress();
+            tcpPacket = (TCPPacket) tcpPacket.deserialize(datagramPacket.getData());
 
-                if (!connections.containsKey(senderAddress)) {
-                    // First connection, set up a new connection state
-                    if (tcpPacket.getSequenceNumber() == 0) {
-                        connections.put(senderAddress, new ConnectionState(1)); // next sequence number = 1
-                    } else {
-                        System.out.println("Unexpected initial sequence number. Ignoring packet.");
-                        continue;
-                    }
-                }
+            if (tcpPacket == null) {
+                System.out.println("Invalid packet received");
+                continue;
+            }
 
-                ConnectionState connection = connections.get(senderAddress);
+            SocketAddress senderAddress = datagramPacket.getSocketAddress();
 
-                // Handle connection termination
-                if (tcpPacket.isFin()) {
-                    System.out.println("Connection termination request received");
-                    // Acknowledge the FIN packet
-                    sendAcknowledgment(tcpPacket, senderAddress);
-
-                    // Mark the connection as closing
-                    connection.isClosing = true;
-
-                    // Remove the connection after sending the acknowledgment
-                    connections.remove(senderAddress);
-                    System.out.println("Connection closed with " + senderAddress);
-                    continue;
-                }
-
-                if (tcpPacket.getSequenceNumber() == connection.expectedSequenceNumber) {
-                    processPacket(tcpPacket, senderAddress);
+            if (!connections.containsKey(senderAddress)) {
+                // First connection, set up a new connection state
+                if (tcpPacket.getSequenceNumber() == 0) {
+                    connections.put(senderAddress, new ConnectionState(1)); // next sequence number = 1
                 } else {
-                    System.out.println("Unexpected sequence number. Expected: " + connection.expectedSequenceNumber + ", but got: " + tcpPacket.getSequenceNumber());
+                    System.out.println("Unexpected initial sequence number. Ignoring packet.");
+                    continue;
                 }
             }
-        } catch (IOException e) {
-            System.err.println("Error in TCPReceiver: " + e.getMessage());
+
+            ConnectionState connection = connections.get(senderAddress);
+
+            // Handle connection termination
+            if (tcpPacket.isFin()) {
+                System.out.println("Connection termination request received");
+                // Acknowledge the FIN packet
+                sendAcknowledgment(tcpPacket, senderAddress);
+
+                // Mark the connection as closing
+                connection.isClosing = true;
+
+                // Remove the connection after sending the acknowledgment
+                connections.remove(senderAddress);
+                System.out.println("Connection closed with " + senderAddress);
+                continue;
+            }
+
+            if (tcpPacket.getSequenceNumber() == connection.expectedSequenceNumber) {
+                processPacket(tcpPacket, senderAddress);
+            } else {
+                System.out.println("Unexpected sequence number. Expected: " + connection.expectedSequenceNumber + ", but got: " + tcpPacket.getSequenceNumber());
+            }
         }
     }
 
@@ -105,10 +108,10 @@ public class Receiver {
     }
 
     private void sendAcknowledgment(TCPPacket packet, SocketAddress senderAddress) {
-        int ackNumber = packet.getSequenceNumber() + packet.getLength();
-        TCPPacket ackPacket = new TCPPacket(ackNumber);
-        ackPacket.setAcknowledgment(ackNumber);
-        ackPacket.setTimestamp(packet.getTimestamp()); // for RTT calculation
+        int ackNumber = packet.getSequenceNumber() + packet.getPayload().length;
+
+        // TODO: ACTUALLY ASSIGN SEQUENCE NUMBER
+        TCPPacket ackPacket = new TCPPacket(0, ackNumber);
 
         byte[] ackData = ackPacket.serialize();
         DatagramPacket ackDatagram = new DatagramPacket(ackData, ackData.length, senderAddress);
