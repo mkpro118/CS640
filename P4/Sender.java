@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-public class Sender {
+public class Sender implements IClient {
     @SuppressWarnings("serial")
     private final static class WorkQueue extends ArrayBlockingQueue<DataSender> {
         public WorkQueue(int size) {
@@ -47,7 +47,6 @@ public class Sender {
                     + sender.config.mtu());
 
             dPacket = new DatagramPacket(pkt, len, sender.serverAddr);
-
             task = new PeriodicTask(this::sendPacket, sender.timeout);
         }
 
@@ -73,6 +72,8 @@ public class Sender {
 
         private void sendPacket() {
             try {
+                System.out.println("timeout = " + sender.timeout);
+                System.out.println(":DataSender.sendPacket: Sending " + packet);
                 sender.socket.send(dPacket);
             } catch (IOException e) {
                 // Something went wrong!
@@ -212,16 +213,19 @@ public class Sender {
     public void connect() throws IOException {
         // Sequence number is 0 on SYN, ACK doesn't matter but we set it to 0.
         seqNo = 0;
-        final TCPPacket packet = new TCPPacket(seqNo, 0);
-        packet.setFlag(TCPFlag.SYN, true);
-
-        byte[] buf = packet.serialize();
-        int len = buf.length;
-
-        DatagramPacket pkt = new DatagramPacket(buf, len, serverAddr);
 
         // Try upto MAX_RETRIES times
         for (int i = 0; i < MAX_RETRIES; i++) {
+            System.out.println("RETRYING");
+            final TCPPacket packet = new TCPPacket(seqNo, 0);
+            packet.setFlag(TCPFlag.SYN, true);
+
+            byte[] buf = packet.serialize();
+            int len = buf.length;
+
+            DatagramPacket pkt;
+            pkt = new DatagramPacket(buf, len, serverAddr);
+            System.out.println(":connect: Sending (packet) " + packet);
             socket.send(pkt);  // Part 1 of 3-way handshake
 
             buf = new byte[config.mtu()];
@@ -236,6 +240,7 @@ public class Sender {
             }
 
             TCPPacket recvPkt = (TCPPacket)(new TCPPacket()).deserialize(buf);
+            System.out.println(":connect: Received (recvPkt) " + recvPkt);
 
             if (!recvPkt.isSyn() || !recvPkt.isAck()) {
                 System.out.println("Wrong packet!");
@@ -250,6 +255,8 @@ public class Sender {
             buf = packet.serialize();
             len = buf.length;
             pkt = new DatagramPacket(buf, len, serverAddr);
+
+            System.out.println(":connect: Sending (ackPacket) " + ackPacket);
             socket.send(pkt);  // Part 3 of 3-way handshake
 
             estimatedRoundTripTime = System.nanoTime() - recvPkt.getTimeStamp();
@@ -260,6 +267,12 @@ public class Sender {
             isConnected = true;
             socket.setSoTimeout(0);
             seqNo++;
+            System.out.println("Connection Established!");
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                
+            }
             return;
         }
 

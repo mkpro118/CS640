@@ -1,1 +1,1 @@
-public record RecvConfig(int port, String fileName, int mtu, int sws) {}
+public record RecvConfig(int port, int mtu, int sws, String fileName) {}

@@ -7,15 +7,18 @@ FLAGS = -d $(BIN_DIR) $(CP)
 CLASSES := bin/Option.class\
            bin/ArgParser.class\
            bin/PeriodicTask.class\
+           bin/IClient.class\
+           bin/IServer.class\
            bin/ITCPPacket.class\
            bin/TCPPacket.class\
            bin/SendConfig.class\
            bin/RecvConfig.class\
            bin/Sender.class\
+           bin/Recv.class\
            bin/TCPFlag.class
 
-SENDER_OPTIONS := -p 23451 -s 127.0.01 -a 23450 -f in. -m 1500 -c 4
-RECEIVER_OPTIONS := -p 23450 -m 1500 -c 4 -f out.txt
+SENDER_OPTIONS := -p 23453 -s 127.0.01 -a 23452 -f tests/in.txt -m 500 -c 4
+RECEIVER_OPTIONS := -p 23452 -m 500 -c 4 -f tests/out.txt
 
 all : $(CLASSES) bin/TCPend.class
 .PHONY : all
@@ -29,6 +32,12 @@ bin/ArgParser.class: ArgParser.java
 bin/PeriodicTask.class: PeriodicTask.java
 	$(JC) $(FLAGS) PeriodicTask.java
 
+bin/IClient.class: IClient.java
+	$(JC) $(FLAGS) IClient.java
+
+bin/IServer.class: IServer.java
+	$(JC) $(FLAGS) IServer.java
+
 bin/ITCPPacket.class: ITCPPacket.java bin/TCPFlag.class
 	$(JC) $(FLAGS) ITCPPacket.java
 
@@ -37,6 +46,9 @@ bin/TCPPacket.class: TCPPacket.java bin/TCPFlag.class
 
 bin/Receiver.class: Receiver.java
 	$(JC) $(FLAGS) Receiver.java
+
+bin/Recv.class: Recv.java
+	$(JC) $(FLAGS) Recv.java
 
 bin/Sender.class: Sender.java
 	$(JC) $(FLAGS) Sender.java
@@ -53,10 +65,10 @@ bin/TCPFlag.class: TCPFlag.java
 bin/TCPend.class: TCPend.java $(CLASSES)
 	$(JC) $(FLAGS) TCPend.java
 
-sender:
+sender: bin/TCPend.class $(CLASSES)
 	$(JV) $(CP) TCPend $(SENDER_OPTIONS)
 
-receiver:
+receiver: bin/TCPend.class $(CLASSES)
 	$(JV) $(CP) TCPend $(RECEIVER_OPTIONS)
 
 clean:

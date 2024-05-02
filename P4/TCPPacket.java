@@ -56,15 +56,15 @@ public class TCPPacket implements ITCPPacket {
         FLAGS_MASK = TCPFlag.SYN.mask | TCPFlag.FIN.mask | TCPFlag.ACK.mask;
         LENGTH_SHIFT = 3;
         CHECKSUM_OFFSET = (SEQUENCE_NUMBER_SIZE + ACKNOWLEDGEMENT_SIZE
-                               + TIMESTAMP_SIZE + ALL_ZEROS_SIZE);
+                               + TIMESTAMP_SIZE + LENGTH_SIZE + ALL_ZEROS_SIZE);
     }
 
-    public static void setMSS(int mss) {
-        if (mss <= HEADER_SIZE)
+    public static void setMTU(int mtu) {
+        if (mtu <= HEADER_SIZE)
             throw new IllegalArgumentException(
                 "Need MSS to at least contain the TCP Header and 1 byte of data"
             );
-        MSS = mss;
+        MSS = mtu - HEADER_SIZE;
     }
 
     public TCPPacket() {}
@@ -98,7 +98,7 @@ public class TCPPacket implements ITCPPacket {
 
     @Override
     public void setPayload(byte[] payload) {
-        if (payload.length + HEADER_SIZE > MSS)
+        if (payload.length > MSS)
             throw new AssertionError(
                 "Payload too large. MSS = " + MSS
               + ". Payload size = " + payload.length
@@ -163,27 +163,27 @@ public class TCPPacket implements ITCPPacket {
         if (checksum == 0 || checksum != internalChecksum)
             internalChecksum = checksum = computeChecksum(packet);
 
+
         return packet;
     }
 
     @Override
     public ITCPPacket deserialize(byte[] packet) {
-        byte[] buf = new byte[8];
         int pos = 0;
 
         sequenceNumber = intFromBytes(packet, pos);
 
         pos += SEQUENCE_NUMBER_SIZE; // Move to ack
-        acknowledgement = intFromBytes(buf, pos);
+        acknowledgement = intFromBytes(packet, pos);
 
         pos += ACKNOWLEDGEMENT_SIZE; // Move to timestamp
-        timeStamp = longFromBytes(buf, pos);
+        timeStamp = longFromBytes(packet, pos);
 
         pos += TIMESTAMP_SIZE; // Move to length
-        length = intFromBytes(buf, pos);
+        length = intFromBytes(packet, pos);
 
         pos += LENGTH_SIZE + ALL_ZEROS_SIZE; // Move to checksum
-        checksum = shortFromBytes(buf, pos);
+        checksum = shortFromBytes(packet, pos);
 
         pos += CHECKSUM_SIZE; // Move to Payload
         if (packet.length - pos < length >> LENGTH_SHIFT)
@@ -212,7 +212,7 @@ public class TCPPacket implements ITCPPacket {
             sequenceNumber,
             acknowledgement,
             timeStamp,
-            length >> 3,
+            length /*>> 3*/,
             isSyn() ? "S" : "_",
             isFin() ? "F" : "_",
             isAck() ? "A" : "_"

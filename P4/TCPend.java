@@ -13,6 +13,8 @@ public final class TCPend {
 
         parser.parse(args);
 
+        TCPPacket.setMTU(parser.get("-m"));
+
         if (parser.getOrDefault("-a", -1) == -1) {
             runReceiver(new RecvConfig(
                 parser.get("-p"),
@@ -34,7 +36,8 @@ public final class TCPend {
 
     private final static void runReceiver(RecvConfig config) {
         try {
-            Receiver receiver = new Receiver(config);
+            Recv receiver = new Recv(config);
+            receiver.bind();
             receiver.accept();
             receiver.start();
         } catch (IOException e) {

@@ -95,6 +95,7 @@ public class PeriodicTask implements Runnable {
             task.run();
 
             try {
+                System.out.println("Sleeping for " + milliseconds + "ms and " + nanoseconds + "ns");
                 Thread.sleep(milliseconds, nanoseconds);
             } catch (InterruptedException e) {
                 if (!Thread.currentThread().isInterrupted())
