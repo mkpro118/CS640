@@ -127,7 +127,7 @@ public class Sender implements IClient {
                     synchronized (sender.monitor) {
                         sender.monitor.notify();
                     }
-                    return;
+                    continue;
                 }
 
                 if (!ackPacket.isAck()) {
@@ -156,6 +156,13 @@ public class Sender implements IClient {
                     if (ack == top.expectedAck()) {
                         // It really shouldn't be possible for this to be null
                         // since this is synchronized
+                        if (sender.doneSending) {
+                            synchronized (sender.monitor) {
+                                sender.monitor.notify();
+                                continue;
+                            }
+                        }
+
                         top = sender.workQueue.poll();
                         top.done();
                     } else if (ctr >= 3) {
@@ -168,11 +175,12 @@ public class Sender implements IClient {
 
                 sender.recomputeTimeout(ackTimestamp);
             }
+            System.out.println("AckListener going down!");
         }
 
         public void start() { active = true; }
 
-        public void stop() { active = false; }
+        public void stop() { active = false; System.out.println("AckListener stopped!!");}
     }
 
     private static final int MAX_RETRIES = 0x10;
@@ -191,6 +199,7 @@ public class Sender implements IClient {
 
     private volatile int seqNo;
     private volatile int lastSeqNo;
+    private volatile boolean doneSending;
 
     private final BlockingQueue<DataSender> workQueue;
 
@@ -306,7 +315,7 @@ public class Sender implements IClient {
     public void send(File file) throws FileNotFoundException {
         if (!isConnected)
             throw new IllegalStateException("Not connected!");
-
+        doneSending = false;
         ackListener.start();
         ackListenerThread.start();
 
@@ -341,9 +350,11 @@ public class Sender implements IClient {
         }
 
         do {} while (workQueue.size() != 0);
+        doneSending = true;
     }
 
     public void close() {
+
         try {
             System.out.println("workQueue.size() " + workQueue.size());
             System.out.println("CLosing ....");
@@ -358,14 +369,6 @@ public class Sender implements IClient {
         synchronized (monitor) {
             System.out.println("Sent fin");
             sender.send();
-            try {
-                System.out.println("Waiting for FIN ACK ...");
-                Thread.sleep(5000);
-                monitor.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
         }
 
         synchronized (monitor) {

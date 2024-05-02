@@ -132,7 +132,7 @@ public class Recv implements IServer {
                 isConnected = false;
                 TCPPacket ackPacket = new TCPPacket(seqNo, nextByte);
                 ackPacket.setFlag(TCPFlag.ACK, true);
-                System.out.println("Sending ACK " + ackPacket);
+                System.out.println("Sending FIN ACK " + ackPacket);
                 buf = ackPacket.serialize();
                 pkt = new DatagramPacket(buf, buf.length, serverAddr);
                 socket.send(pkt);
@@ -196,27 +196,35 @@ public class Recv implements IServer {
 
     @Override
     public void close() throws IOException {
+        System.out.println("CLOSING...");
         isConnected = false;
         worker.interrupt();
 
-        TCPPacket synAckPacket = new TCPPacket(seqNo, nextByte);
-        synAckPacket.setFlag(TCPFlag.FIN, true);
-        synAckPacket.setFlag(TCPFlag.ACK, true);
+        for (int i = 0; i < MAX_RETRIES; i++) {
+            TCPPacket finAckPacket = new TCPPacket(seqNo, nextByte);
+            finAckPacket.setFlag(TCPFlag.FIN, true);
+            // finAckPacket.setFlag(TCPFlag.ACK, true);
 
-        byte[] buf = synAckPacket.serialize();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, serverAddr);
+            byte[] buf = finAckPacket.serialize();
+            DatagramPacket packet = new DatagramPacket(buf, buf.length, serverAddr);
 
-        socket.send(packet);
+            System.out.println("SENDING " + finAckPacket);
+            socket.send(packet);
 
-        // GET ACK
-        socket.setSoTimeout(INITIAL_TIMEOUT);
+            // GET ACK
+            socket.setSoTimeout(INITIAL_TIMEOUT);
 
-        try {
-            buf = new byte[config.mtu()];
-            DatagramPacket ackPacket = new DatagramPacket(buf, buf.length);
-            socket.receive(ackPacket);
-        } catch (SocketTimeoutException e) {
+            try {
+                buf = new byte[config.mtu()];
+                DatagramPacket ackPacket = new DatagramPacket(buf, buf.length);
+                socket.receive(ackPacket);
+            } catch (SocketTimeoutException e) {
+                System.out.println("TIMEOUT");
+                continue;
+            }
             return;
         }
+
+        throw new IllegalStateException("Failed to properly close");
     }
 }
