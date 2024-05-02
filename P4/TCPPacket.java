@@ -187,7 +187,7 @@ public class TCPPacket implements ITCPPacket {
 
         pos += CHECKSUM_SIZE; // Move to Payload
         if (packet.length - pos < length >> LENGTH_SHIFT)
-            throw new IllegalStateException();
+            throw new IllegalStateException("packet.length " + packet.length + " pos " + pos + " length >> LENGTH_SHIFT " + (length >> LENGTH_SHIFT));
 
         payload = new byte[length >> LENGTH_SHIFT];
         System.arraycopy(packet, pos, payload, 0, payload.length);

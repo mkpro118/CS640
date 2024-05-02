@@ -102,8 +102,11 @@ public class Recv implements IServer {
             if (recvAckPacket.getAcknowledgement() == 1) {
                 socket.setSoTimeout(0);
                 seqNo++;
+                isConnected = true;
                 System.out.println("Connection Established!");
                 return;
+            } else {
+                System.out.println("recvAckPacket.getAcknowledgement() " + recvAckPacket.getAcknowledgement());
             }
         }
 
@@ -115,6 +118,7 @@ public class Recv implements IServer {
         worker.start();
         byte[] buf;
         DatagramPacket pkt;
+        System.out.println("connect = " + isConnected);
         while (isConnected) {
             buf = new byte[config.mtu()];
             pkt = new DatagramPacket(buf, buf.length);
@@ -126,22 +130,33 @@ public class Recv implements IServer {
 
             if (dataPacket.isFin()) {
                 isConnected = false;
+                TCPPacket ackPacket = new TCPPacket(seqNo, nextByte);
+                ackPacket.setFlag(TCPFlag.ACK, true);
+                System.out.println("Sending ACK " + ackPacket);
+                buf = ackPacket.serialize();
+                pkt = new DatagramPacket(buf, buf.length, serverAddr);
+                socket.send(pkt);
                 return;
             }
 
             if (dataPacket.isSyn() || dataPacket.isAck()) {
                 System.out.println("Unexpected SYN/ACK packet");
+                System.out.println(dataPacket);
                 continue;
             }
 
-            if (dataPacket.getSequenceNumber() != nextByte)
+            if (dataPacket.getSequenceNumber() != nextByte) {
+                System.out.println("Wrong Seqno, expected " + nextByte);
+                System.out.println(dataPacket);
                 continue;
+            }
 
             if (workQueue.offer(dataPacket))
                 nextByte += dataPacket.getPayload().length;
 
             TCPPacket ackPacket = new TCPPacket(seqNo, nextByte);
             ackPacket.setFlag(TCPFlag.ACK, true);
+            System.out.println("Sending ACK " + ackPacket);
             buf = ackPacket.serialize();
             pkt = new DatagramPacket(buf, buf.length, serverAddr);
             socket.send(pkt);
@@ -161,8 +176,15 @@ public class Recv implements IServer {
             TCPPacket packet = null;
             try {
                 packet = workQueue.take();
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+                if (isConnected) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+                return;
+            }
             byte[] buf = packet.getPayload();
+            System.out.println("length = " + packet.getPayload().length);
             try {
                 writer.write(buf);
             } catch (IOException e) {

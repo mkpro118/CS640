@@ -40,6 +40,7 @@ public final class TCPend {
             receiver.bind();
             receiver.accept();
             receiver.start();
+            receiver.close();
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);

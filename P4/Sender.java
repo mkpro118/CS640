@@ -117,9 +117,17 @@ public class Sender implements IClient {
                 TCPPacket ackPacket = (new TCPPacket());
                 ackPacket = (TCPPacket) ackPacket.deserialize(buf);
 
-                if (ackPacket.isSyn() || ackPacket.isFin()) {
-                    sender.monitor.notify();
-                    continue;
+                System.out.println("--------------------------------------");
+                System.out.println("\n:AckListener:  recvd " + ackPacket);
+                System.out.println("--------------------------------------");
+
+                if (ackPacket.isFin()) {
+                    stop();
+                    System.out.println("Got FIN!!!");
+                    synchronized (sender.monitor) {
+                        sender.monitor.notify();
+                    }
+                    return;
                 }
 
                 if (!ackPacket.isAck()) {
@@ -173,6 +181,8 @@ public class Sender implements IClient {
     private final SendConfig config;
     private final DatagramSocket socket;
     private final SocketAddress serverAddr;
+    private final AckListener ackListener;
+    private final Thread ackListenerThread;
 
     // Re-Transmission Timeout
     private volatile long timeout;
@@ -194,6 +204,10 @@ public class Sender implements IClient {
         socket = new DatagramSocket(config.port());
         serverAddr = new InetSocketAddress(config.remoteIP(),
                                            config.remotePort());
+
+        ackListener = new AckListener(this);
+        ackListenerThread = new Thread(ackListener);
+
         workQueue = new WorkQueue(config.sws());
         isConnected = false;
         timeout = INITIAL_TIMEOUT;
@@ -236,6 +250,8 @@ public class Sender implements IClient {
             try {
                 socket.receive(pkt);  // Part 2 of 3-way handshake
             } catch (SocketTimeoutException e) {
+                System.out.println("INITIAL_TIMEOUT " + INITIAL_TIMEOUT);
+                e.printStackTrace();
                 continue;
             }
 
@@ -252,7 +268,7 @@ public class Sender implements IClient {
             // Syn stays the same for an ACK packet
             TCPPacket ackPacket = new TCPPacket(seqNo, ++lastSeqNo);
             ackPacket.setFlag(TCPFlag.ACK, true);
-            buf = packet.serialize();
+            buf = ackPacket.serialize();
             len = buf.length;
             pkt = new DatagramPacket(buf, len, serverAddr);
 
@@ -263,20 +279,20 @@ public class Sender implements IClient {
             estimatedDeviation = 0;
 
             timeout = 2 * estimatedRoundTripTime;
+            System.out.println("timeout = " + timeout);
 
             isConnected = true;
             socket.setSoTimeout(0);
             seqNo++;
             System.out.println("Connection Established!");
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                
-            }
             return;
         }
 
         throw new IllegalStateException("Failed to connect!");
+    }
+
+    private void handleSynAck() {
+
     }
 
     public void sendFile() throws FileNotFoundException {
@@ -291,6 +307,9 @@ public class Sender implements IClient {
         if (!isConnected)
             throw new IllegalStateException("Not connected!");
 
+        ackListener.start();
+        ackListenerThread.start();
+
         final long fileLen = file.length();
 
         final int fileChunkSize = config.mtu() - TCPPacket.HEADER_SIZE;
@@ -298,7 +317,8 @@ public class Sender implements IClient {
         FileInputStream reader = new FileInputStream(file);
 
         for (int i = 0; i < fileLen; i += fileChunkSize) {
-            byte[] buf = new byte[fileChunkSize];
+            int bufSize = (int) Math.min(fileChunkSize, fileLen - i);
+            byte[] buf = new byte[bufSize];
             TCPPacket dataPacket = new TCPPacket(seqNo, lastSeqNo);
 
             try {
@@ -324,13 +344,23 @@ public class Sender implements IClient {
     }
 
     public void close() {
+        try {
+            System.out.println("workQueue.size() " + workQueue.size());
+            System.out.println("CLosing ....");
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+
+        }
         TCPPacket pkt = new TCPPacket(seqNo++, lastSeqNo);
         pkt.setFlag(TCPFlag.FIN, true);
 
         DataSender sender = new DataSender(this, pkt);
         synchronized (monitor) {
+            System.out.println("Sent fin");
             sender.send();
             try {
+                System.out.println("Waiting for FIN ACK ...");
+                Thread.sleep(5000);
                 monitor.wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
