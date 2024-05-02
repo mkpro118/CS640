@@ -23,52 +23,52 @@ RECEIVER_OPTIONS := -p 23452 -m 500 -c 4 -f tests/out.txt
 all : $(CLASSES) src/TCPend.class
 .PHONY : all
 
-src/Option.class: src/Option.java
+src/Option.class:
 	$(JC) $(FLAGS) src/Option.java
 
-src/ArgParser.class: src/ArgParser.java
+src/ArgParser.class:
 	$(JC) $(FLAGS) src/ArgParser.java
 
-src/PeriodicTask.class: src/PeriodicTask.java
+src/PeriodicTask.class:
 	$(JC) $(FLAGS) src/PeriodicTask.java
 
-src/IClient.class: src/IClient.java
+src/IClient.class:
 	$(JC) $(FLAGS) src/IClient.java
 
-src/IServer.class: src/IServer.java
+src/IServer.class:
 	$(JC) $(FLAGS) src/IServer.java
 
-src/ITCPPacket.class: src/ITCPPacket.java src/TCPFlag.class
+src/ITCPPacket.class: src/TCPFlag.class
 	$(JC) $(FLAGS) src/ITCPPacket.java
 
-src/TCPPacket.class: src/TCPPacket.java src/TCPFlag.class
+src/TCPPacket.class: src/TCPFlag.class
 	$(JC) $(FLAGS) src/TCPPacket.java
 
-src/Receiver.class: src/Receiver.java
+src/Receiver.class:
 	$(JC) $(FLAGS) src/Receiver.java
 
-src/Recv.class: src/Recv.java
+src/Recv.class:
 	$(JC) $(FLAGS) src/Recv.java
 
-src/Sender.class: src/Sender.java
+src/Sender.class:
 	$(JC) $(FLAGS) src/Sender.java
 
-src/RecvConfig.class: src/RecvConfig.java
+src/RecvConfig.class:
 	$(JC) $(FLAGS) src/RecvConfig.java
 
-src/SendConfig.class: src/SendConfig.java
+src/SendConfig.class:
 	$(JC) $(FLAGS) src/SendConfig.java
 
-src/TCPFlag.class: src/TCPFlag.java
+src/TCPFlag.class:
 	$(JC) $(FLAGS) src/TCPFlag.java
 
-src/TCPend.class: src/TCPend.java $(CLASSES)
+src/TCPend.class: $(CLASSES)
 	$(JC) $(FLAGS) src/TCPend.java
 
-sender: src/TCPend.class $(CLASSES)
+sender: $(CLASSES)
 	$(JV) $(CP) TCPend $(SENDER_OPTIONS)
 
-receiver: src/TCPend.class $(CLASSES)
+receiver: $(CLASSES)
 	$(JV) $(CP) TCPend $(RECEIVER_OPTIONS)
 
 clean:
