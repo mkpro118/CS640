@@ -4,18 +4,18 @@ BIN_DIR := .
 CP := -cp $(BIN_DIR)
 FLAGS = -d $(BIN_DIR) $(CP)
 
-CLASSES := bin/Option.class\
-           bin/ArgParser.class\
-           bin/PeriodicTask.class\
-           bin/IClient.class\
-           bin/IServer.class\
-           bin/ITCPPacket.class\
-           bin/TCPPacket.class\
-           bin/SendConfig.class\
-           bin/RecvConfig.class\
-           bin/Sender.class\
-           bin/Recv.class\
-           bin/TCPFlag.class
+CLASSES := src/Option.class\
+           src/ArgParser.class\
+           src/PeriodicTask.class\
+           src/IClient.class\
+           src/IServer.class\
+           src/ITCPPacket.class\
+           src/TCPPacket.class\
+           src/SendConfig.class\
+           src/RecvConfig.class\
+           src/Sender.class\
+           src/Recv.class\
+           src/TCPFlag.class
 
 SENDER_OPTIONS := -p 23453 -s 127.0.01 -a 23452 -f tests/in.txt -m 500 -c 4
 RECEIVER_OPTIONS := -p 23452 -m 500 -c 4 -f tests/out.txt
