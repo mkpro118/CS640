@@ -1,6 +1,6 @@
 JC = javac
 JV = java
-BIN_DIR := bin
+BIN_DIR := .
 CP := -cp $(BIN_DIR)
 FLAGS = -d $(BIN_DIR) $(CP)
 
