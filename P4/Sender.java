@@ -116,8 +116,15 @@ public class Sender {
                 TCPPacket ackPacket = (new TCPPacket());
                 ackPacket = (TCPPacket) ackPacket.deserialize(buf);
 
+                if (ackPacket.isSyn() || ackPacket.isFin()) {
+                    sender.monitor.notify();
+                    continue;
+                }
+
                 if (!ackPacket.isAck()) {
                     System.out.println("Not an Ack Packet!");
+                    System.out.println("Wait actually what is this packet");
+                    System.out.println("Discarding...");
                     continue;
                 }
 
@@ -178,6 +185,9 @@ public class Sender {
 
     private boolean isConnected;
 
+    // For synchronization
+    private Object monitor;
+
     public Sender(SendConfig config) throws IOException {
         this.config = config;
         socket = new DatagramSocket(config.port());
@@ -186,6 +196,8 @@ public class Sender {
         workQueue = new WorkQueue(config.sws());
         isConnected = false;
         timeout = INITIAL_TIMEOUT;
+
+        monitor = new Object();
 
         // Ensure connection closes in case of an unexpected error
         Runtime.getRuntime().addShutdownHook(new Thread(){
@@ -295,7 +307,36 @@ public class Sender {
     }
 
     public void close() {
-        TCPPacket finPacket = new TCPPacket(seqNo, );
+        TCPPacket pkt = new TCPPacket(seqNo++, lastSeqNo);
+        pkt.setFlag(TCPFlag.FIN, true);
+
+        DataSender sender = new DataSender(this, pkt);
+        synchronized (monitor) {
+            sender.send();
+            try {
+                monitor.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+
+        synchronized (monitor) {
+            System.out.println("Waiting for FIN from Receiver...");
+            try {
+                monitor.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            // I'm too lazy to update everything to use a non thread impl
+            // of datasender. Here, we use tricks (props if you figure it out)
+            // (I do not mean academically, I mean with software)
+            pkt.setFlag(TCPFlag.FIN, false);
+            pkt.setFlag(TCPFlag.ACK, true);
+            sender.fastRetransmit(); // Allows us to send non-periodic
+        }
     }
 
     private void recomputeTimeout(long ackTimeStamp) {
