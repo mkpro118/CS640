@@ -165,6 +165,7 @@ public class Sender implements IClient {
                     synchronized (sender.workQueue) {
                         while (!sender.workQueue.isEmpty())
                             sender.workQueue.poll();
+                        stop();
                         synchronized (sender.monitor) {
                             sender.monitor.notify();
                         }
@@ -381,7 +382,7 @@ public class Sender implements IClient {
         doneSending = true;
     }
 
-    public void close() {
+    public void close() throws IOException {
         TCPPacket pkt = new TCPPacket(seqNo++, lastSeqNo);
         pkt.setFlag(TCPFlag.FIN, true);
 
@@ -389,21 +390,34 @@ public class Sender implements IClient {
         synchronized (monitor) {
             sender.send();
         }
+        boolean gotFinAck = false;
+        for (int i = 0; i < MAX_RETRIES && !gotFinAck && !; i++) {
+            byte[] buf = new byte[config.mtu()];
+            DatagramPacket finAckDpkt = new DatagramPacket(buf, buf.length);
 
-        synchronized (monitor) {
-            try {
-                monitor.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                System.exit(1);
+            socket.receive(finAckDpkt);
+            pkt = (TCPPacket) pkt.deserialize(buf);
+            System.out.printf(FORMAT,
+                "rcv",
+                (System.nanoTime() - startTime) / 1e6,
+                pkt.isSyn() ? "S" : "-",
+                pkt.isAck() ? "A" : "-",
+                pkt.isFin() ? "F" : "-",
+                pkt.getPayload().length > 0 ? "D" : "-",
+                pkt.getSequenceNumber(),
+                pkt.getPayload().length,
+                pkt.getAcknowledgement()
+            );
+
+            if (gotFinAck && pkt.isAck()) {
+                gotFinAck = true;
             }
 
-            // I'm too lazy to update everything to use a non thread impl
-            // of datasender. Here, we use tricks (props if you figure it out)
-            // (I do not mean academically, I mean with software)
-            pkt.setFlag(TCPFlag.FIN, false);
-            pkt.setFlag(TCPFlag.ACK, true);
-            sender.fastRetransmit(); // Allows us to send non-periodic
+            if (pkt.isFin()) {
+                pkt.setFlag(TCPFlag.FIN, false);
+                pkt.setFlag(TCPFlag.ACK, true);
+                sender.fastRetransmit(); // Allows us to send non-periodic
+            }
         }
     }
 
