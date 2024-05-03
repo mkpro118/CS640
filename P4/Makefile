@@ -65,11 +65,11 @@ src/TCPFlag.class:
 src/TCPend.class: $(CLASSES)
 	$(JC) $(FLAGS) src/TCPend.java
 
-sender: $(CLASSES)
+sender: src/TCPend.class $(CLASSES)
 	$(JV) $(CP) TCPend $(SENDER_OPTIONS)
 
-receiver: $(CLASSES)
+receiver: src/TCPend.class $(CLASSES)
 	$(JV) $(CP) TCPend $(RECEIVER_OPTIONS)
 
 clean:
-	rm -fr src
+	rm -fr src/*.class

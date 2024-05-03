@@ -165,10 +165,8 @@ public class Sender implements IClient {
                     // There's nothing in the queue, but technically we
                     // shouldn't get an ack here then, unless the ack somehow
                     // got delayed, and we retransmitted
-                    if (top == null)
-                        continue;
 
-                    if (ack == top.expectedAck()) {
+                    while (top != null && ack >= top.expectedAck()) {
                         // It really shouldn't be possible for this to be null
                         // since this is synchronized
                         if (sender.doneSending) {
@@ -180,8 +178,11 @@ public class Sender implements IClient {
 
                         top = sender.workQueue.poll();
                         top.done();
-                    } else if (ctr >= 3) {
+                        top = sender.workQueue.peek();
+                    }
+                    if (ctr >= 3) {
                         top.fastRetransmit();
+                        ctr = 0;
                         continue;
                     }
                 }
