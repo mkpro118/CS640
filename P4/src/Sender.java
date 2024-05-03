@@ -391,7 +391,7 @@ public class Sender implements IClient {
             sender.send();
         }
         boolean gotFinAck = false;
-        for (int i = 0; i < MAX_RETRIES && !gotFinAck && !; i++) {
+        for (int i = 0; i < MAX_RETRIES && !gotFinAck; i++) {
             byte[] buf = new byte[config.mtu()];
             DatagramPacket finAckDpkt = new DatagramPacket(buf, buf.length);
 
