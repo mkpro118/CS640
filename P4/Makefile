@@ -17,8 +17,8 @@ CLASSES := src/Option.class\
            src/Recv.class\
            src/TCPFlag.class
 
-SENDER_OPTIONS := -p 23453 -s 127.0.01 -a 23452 -f tests/in.txt -m 500 -c 4
-RECEIVER_OPTIONS := -p 23452 -m 500 -c 4 -f tests/out.txt
+SENDER_OPTIONS := -p 23453 -s 127.0.01 -a 23452 -f src/tests/in.txt -m 500 -c 4
+RECEIVER_OPTIONS := -p 23452 -m 500 -c 4 -f src/tests/out.txt
 
 all : $(CLASSES) src/TCPend.class
 .PHONY : all
