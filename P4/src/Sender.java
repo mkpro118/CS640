@@ -24,6 +24,14 @@ public class Sender implements IClient {
             super.put(ds);
             ds.send();
         }
+
+        @Override
+        public DataSender poll() {
+            DataSender ds = super.poll();
+            if (ds != null)
+                ds.done();
+            return ds;
+        }
     }
 
     private final static class DataSender {
@@ -153,6 +161,16 @@ public class Sender implements IClient {
                 }
 
                 int ack = ackPacket.getAcknowledgement();
+                if (ack > sender.maxAck) {
+                    synchronized (sender.workQueue) {
+                        while (!sender.workQueue.isEmpty())
+                            sender.workQueue.poll();
+                        synchronized (sender.monitor) {
+                            sender.monitor.notify();
+                        }
+                        return;
+                    }
+                }
                 if (ack == lastAck) {
                     ctr++;
                 } else {
@@ -177,7 +195,6 @@ public class Sender implements IClient {
                         }
 
                         top = sender.workQueue.poll();
-                        top.done();
                         top = sender.workQueue.peek();
                     }
                     if (ctr >= 3) {
@@ -217,6 +234,7 @@ public class Sender implements IClient {
     private volatile int seqNo;
     private volatile int lastSeqNo;
     private volatile boolean doneSending;
+    private long maxAck;
 
     private final BlockingQueue<DataSender> workQueue;
 
@@ -329,6 +347,7 @@ public class Sender implements IClient {
         ackListenerThread.start();
 
         final long fileLen = file.length();
+        maxAck = fileLen;
 
         final int fileChunkSize = config.mtu() - TCPPacket.HEADER_SIZE;
 
