@@ -41,12 +41,14 @@ public class Sender implements IClient {
         private final TCPPacket packet;
         private final DatagramPacket dPacket;
         private final int expectedAck;
+        private final int dataLength;
         private int nRetries;
 
         public DataSender(Sender sender, TCPPacket packet) {
             this.sender = sender;
             this.packet = packet;
-            expectedAck = packet.getSequenceNumber() + packet.getPayload().length;
+            dataLength = packet.getPayload().length;
+            expectedAck = packet.getSequenceNumber() + dataLength;
 
             byte[] pkt = packet.serialize();
             int len = pkt.length;
@@ -75,6 +77,7 @@ public class Sender implements IClient {
 
         public void done() {
             task.stop();
+            sender.metrics.retransmissionCount += nRetries - 1;
         }
 
         public void fastRetransmit() {
@@ -83,11 +86,12 @@ public class Sender implements IClient {
 
         private void sendPacket() {
             try {
-                if (nRetries > Sender.MAX_RETRIES)
+                if (nRetries++ > Sender.MAX_RETRIES)
                     done();
                 sender.log("snd", packet);
                 sender.socket.send(dPacket);
-                nRetries++;
+                sender.metrics.dataTransferred += dataLength;
+                sender.metrics.packetsTransferred++;
             } catch (IOException e) {
                 // Something went wrong!
                 e.printStackTrace();
@@ -126,10 +130,16 @@ public class Sender implements IClient {
                     e.printStackTrace();
                     System.exit(1);
                 }
+                sender.metrics.packetsTransferred++;
 
                 TCPPacket ackPacket = (new TCPPacket());
                 ackPacket = (TCPPacket) ackPacket.deserialize(buf);
                 sender.log("rcv", ackPacket);
+
+                if (!ackPacket.isChecksumValid()) {
+                    sender.metrics.wrongChecksum++;
+                    continue;
+                }
 
                 if (ackPacket.isFin()) {
                     stop();
@@ -140,9 +150,7 @@ public class Sender implements IClient {
                 }
 
                 if (!ackPacket.isAck()) {
-                    System.out.println("Not an Ack Packet!");
-                    System.out.println("Wait actually what is this packet");
-                    System.out.println("Discarding...");
+                    sender.metrics.packetsDiscarded++;
                     continue;
                 }
 
@@ -160,6 +168,7 @@ public class Sender implements IClient {
                 }
                 if (ack == lastAck) {
                     ctr++;
+                    sender.metrics.duplicateAckCount++;
                 } else {
                     ctr = 0;
                     lastAck = ack;
@@ -288,9 +297,15 @@ public class Sender implements IClient {
             } catch (SocketTimeoutException e) {
                 continue;
             }
+            metrics.packetsTransferred++;
 
             TCPPacket recvPkt = (TCPPacket)(new TCPPacket()).deserialize(buf);
             log("rcv", packet);
+
+            if (!recvPkt.isChecksumValid()) {
+                metrics.wrongChecksum++;
+                continue;
+            }
 
             if (!recvPkt.isSyn() || !recvPkt.isAck())
                 continue;
@@ -306,6 +321,7 @@ public class Sender implements IClient {
 
             log("send", ackPacket);
             socket.send(pkt);  // Part 3 of 3-way handshake
+            metrics.packetsTransferred++;
 
             estimatedRoundTripTime = System.nanoTime() - recvPkt.getTimeStamp();
             estimatedDeviation = 0;
@@ -316,6 +332,7 @@ public class Sender implements IClient {
             socket.setSoTimeout(0);
             seqNo++;
             startTime = System.nanoTime();
+            metrics.retransmissionCount += 2 * i;
             return;
         }
 
@@ -398,10 +415,16 @@ public class Sender implements IClient {
                 // Socket was closed by timeout
                 System.exit(0);
             }
+            metrics.packetsTransferred++;
 
             TCPPacket recvPkt = new TCPPacket();
             recvPkt = (TCPPacket) recvPkt.deserialize(buf);
             log("rcv", recvPkt);
+
+            if (!recvPkt.isChecksumValid()) {
+                metrics.wrongChecksum++;
+                continue;
+            }
 
             if (recvPkt.isFin()) {
                 TCPPacket ack;
@@ -411,6 +434,7 @@ public class Sender implements IClient {
                 recvPacket = new DatagramPacket(buf, buf.length, serverAddr);
                 log("snd", ack);
                 socket.send(recvPacket);
+                metrics.packetsTransferred++;
             } else if (recvPkt.isAck()) {
                 sender.done();
             }
