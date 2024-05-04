@@ -205,6 +205,13 @@ public class TCPPacket implements ITCPPacket {
         this.checksum = checksum;
     }
 
+    public final boolean isChecksumValid() {
+        short chksm = getChecksum();
+        setChecksum((short) 0);
+        serialize();
+        return getChecksum() == chksm;
+    }
+
     @Override
     public String toString() {
         return String.format(
