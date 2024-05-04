@@ -160,11 +160,7 @@ public class Recv implements IServer {
                 continue;
             }
 
-            if (dataPacket.getSequenceNumber() != nextByte) {
-                continue;
-            }
-
-            if (workQueue.offer(dataPacket))
+            if (dataPacket.getSequenceNumber() == nextByte && workQueue.offer(dataPacket))
                 nextByte += dataPacket.getPayload().length;
 
             TCPPacket ackPacket = new TCPPacket(seqNo, nextByte);
