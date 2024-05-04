@@ -411,6 +411,7 @@ public class Sender implements IClient {
 
             if (gotFinAck && pkt.isAck()) {
                 gotFinAck = true;
+                sender.done();
             }
 
             if (pkt.isFin()) {
