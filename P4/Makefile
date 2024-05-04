@@ -7,6 +7,7 @@ FLAGS = -d $(BIN_DIR) $(CP)
 CLASSES := src/Option.class\
            src/ArgParser.class\
            src/PeriodicTask.class\
+           src/Metrics.class\
            src/IClient.class\
            src/IServer.class\
            src/ITCPPacket.class\
@@ -31,6 +32,9 @@ src/ArgParser.class:
 
 src/PeriodicTask.class:
 	$(JC) $(FLAGS) src/PeriodicTask.java
+
+src/Metrics.class:
+	$(JC) $(FLAGS) src/Metrics.java
 
 src/IClient.class:
 	$(JC) $(FLAGS) src/IClient.java
