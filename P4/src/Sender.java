@@ -40,6 +40,7 @@ public class Sender implements IClient {
         private final TCPPacket packet;
         private final DatagramPacket dPacket;
         private final int expectedAck;
+        private int nRetries;
 
         public DataSender(Sender sender, TCPPacket packet) {
             this.sender = sender;
@@ -56,6 +57,7 @@ public class Sender implements IClient {
 
             dPacket = new DatagramPacket(pkt, len, sender.serverAddr);
             task = new PeriodicTask(this::sendPacket, sender.timeout);
+            nRetries = 0;
         }
 
         public int expectedAck() {
@@ -80,6 +82,8 @@ public class Sender implements IClient {
 
         private void sendPacket() {
             try {
+                if (nRetries > Sender.MAX_RETRIES)
+                    done();
                 System.out.printf(FORMAT,
                     "snd",
                     (System.nanoTime() - sender.startTime) / 1e6,
@@ -92,6 +96,7 @@ public class Sender implements IClient {
                     packet.getAcknowledgement()
                 );
                 sender.socket.send(dPacket);
+                nRetries++;
             } catch (IOException e) {
                 // Something went wrong!
                 e.printStackTrace();
@@ -409,7 +414,8 @@ public class Sender implements IClient {
                 pkt.getAcknowledgement()
             );
 
-            if (gotFinAck && pkt.isAck()) {
+            if (pkt.isAck()) {
+                System.out.println("GOT FIN ACK");
                 gotFinAck = true;
                 sender.done();
             }
