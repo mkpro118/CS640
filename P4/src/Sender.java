@@ -411,7 +411,6 @@ public class Sender implements IClient {
                 recvPacket = new DatagramPacket(buf, buf.length, serverAddr);
                 log("snd", ack);
                 socket.send(recvPacket);
-                continue;
             } else if (recvPkt.isAck()) {
                 sender.done();
             }
