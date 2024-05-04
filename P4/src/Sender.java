@@ -377,6 +377,7 @@ public class Sender implements IClient {
         pkt.setFlag(TCPFlag.FIN, true);
 
         DataSender sender = new DataSender(this, pkt);
+        sender.send();
 
         (new Thread() {
             @Override
