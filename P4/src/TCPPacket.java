@@ -163,7 +163,8 @@ public class TCPPacket implements ITCPPacket {
         if (checksum == 0 || checksum != internalChecksum)
             internalChecksum = checksum = computeChecksum(packet);
 
-
+        System.arraycopy(toBytes(checksum), 0, packet,
+                         CHECKSUM_OFFSET, CHECKSUM_SIZE);
         return packet;
     }
 
