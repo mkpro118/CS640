@@ -7,14 +7,17 @@ public class Metrics {
     public int duplicateAckCount; // Number of duplicate acknowledgements
 
     private final static String FORMAT;
+    private final static String HR;
 
     static {
-        FORMAT = "Amount of Data transferred/received: %d\n"
+        // Horizontal line
+        HR = "-".repeat(80) + "\n";
+        FORMAT = "\n" + HR + "Amount of Data transferred/received: %d\n"
                + "Number of packets sent/received: %d\n"
                + "Number of out-of-sequence packets discarded: %d\n"
                + "Number of packets discarded due to incorrect checksum: %d\n"
                + "Number of retransmissions: %d\n"
-               + "Number of duplicate acknowledgements: %d\n";
+               + "Number of duplicate acknowledgements: %d\n" + HR;
     }
 
     public Metrics() {
