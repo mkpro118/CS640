@@ -32,6 +32,7 @@ public final class TCPend {
                 parser.get("-c")
             ));
         }
+        System.out.println("Done!");
     }
 
     private final static void runReceiver(RecvConfig config) {
