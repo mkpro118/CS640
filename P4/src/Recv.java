@@ -66,10 +66,17 @@ public class Recv implements IServer {
             serverAddr = packet.getSocketAddress();
 
             synPacket = (TCPPacket) synPacket.deserialize(buf);
+            metrics.packetsTransferred++;
             log("rcv", synPacket);
+
+            if (!synPacket.isChecksumValid()) {
+                metrics.wrongChecksum++;
+                continue;
+            }
 
             if (synPacket.isSyn())
                 break;
+            metrics.packetsDiscarded++;
         }
 
         // Send SYN + ACK
@@ -85,6 +92,7 @@ public class Recv implements IServer {
 
             log("snd", synAckPacket);
             socket.send(packet);
+            metrics.packetsTransferred++;
 
             // GET ACK
             socket.setSoTimeout(INITIAL_TIMEOUT);
@@ -97,9 +105,14 @@ public class Recv implements IServer {
                 e.printStackTrace();
                 continue;
             }
+            metrics.packetsTransferred++;
 
             TCPPacket recvAckPacket = new TCPPacket();
             recvAckPacket = (TCPPacket) recvAckPacket.deserialize(buf);
+            if (!recvAckPacket.isChecksumValid()) {
+                metrics.wrongChecksum++;
+                continue;
+            }
 
             log("rcv", recvAckPacket);
 
@@ -108,8 +121,10 @@ public class Recv implements IServer {
                 continue;
             }
 
-            if (!recvAckPacket.isAck())
+            if (!recvAckPacket.isAck()) {
+                metrics.packetsDiscarded++;
                 continue;
+            }
 
             if (recvAckPacket.getAcknowledgement() == 1) {
                 estimatedRoundTripTime = System.nanoTime() - recvAckPacket.getTimeStamp();
@@ -121,6 +136,7 @@ public class Recv implements IServer {
                 socket.setSoTimeout(0);
                 seqNo++;
                 startTime = System.nanoTime();
+                metrics.retransmissionCount += i;
                 return;
             }
         }
@@ -138,9 +154,14 @@ public class Recv implements IServer {
             pkt = new DatagramPacket(buf, buf.length);
 
             socket.receive(pkt);
+            metrics.packetsTransferred++;
 
             TCPPacket dataPacket = new TCPPacket();
             dataPacket = (TCPPacket) dataPacket.deserialize(buf);
+            if (!dataPacket.isChecksumValid()) {
+                metrics.wrongChecksum++;
+                continue;
+            }
             log("rcv", dataPacket);
 
             if (dataPacket.isFin()) {
@@ -151,17 +172,21 @@ public class Recv implements IServer {
                 pkt = new DatagramPacket(buf, buf.length, serverAddr);
                 log("snd", ackPacket);
                 socket.send(pkt);
+                metrics.packetsTransferred++;
                 return;
             }
 
             if (dataPacket.isSyn() || dataPacket.isAck()) {
-                System.out.println("Unexpected SYN/ACK packet");
-                System.out.println(dataPacket);
+                metrics.packetsDiscarded++;
                 continue;
             }
 
+            int len = dataPacket.getPayload().length;
+            metrics.dataTransferred += len;
+
             if (dataPacket.getSequenceNumber() == nextByte && workQueue.offer(dataPacket))
-                nextByte += dataPacket.getPayload().length;
+                nextByte += len;
+
 
             TCPPacket ackPacket = new TCPPacket(seqNo, nextByte);
             ackPacket.setFlag(TCPFlag.ACK, true);
@@ -169,6 +194,8 @@ public class Recv implements IServer {
             pkt = new DatagramPacket(buf, buf.length, serverAddr);
             log("snd", ackPacket);
             socket.send(pkt);
+            metrics.packetsTransferred++;
+            recomputeTimeout(dataPacket.getTimeStamp());
         }
     }
 
@@ -257,6 +284,10 @@ public class Recv implements IServer {
 
             TCPPacket recvPkt = new TCPPacket();
             recvPkt = (TCPPacket) recvPkt.deserialize(buf);
+            if (recvPkt.isChecksumValid()) {
+                metrics.wrongChecksum++;
+                continue;
+            }
             log("rcv", recvPkt);
 
             if (recvPkt.isFin()) {
