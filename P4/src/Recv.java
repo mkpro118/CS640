@@ -14,11 +14,15 @@ public class Recv implements IServer {
 
     private final BlockingQueue<TCPPacket> workQueue;
     private final Thread worker;
+    private final Metrics metrics;
 
     private int seqNo;
     private int nextByte;
     private boolean isConnected;
     private double startTime;
+    private volatile long timeout;
+    private volatile long estimatedRoundTripTime;
+    private volatile long estimatedDeviation;
 
     private static final int MAX_RETRIES = 0x10;
     private static final int INITIAL_TIMEOUT = 0x1388;
@@ -27,8 +31,10 @@ public class Recv implements IServer {
     public Recv(RecvConfig config) {
         this.config = config;
         seqNo = 0;
+        timeout = INITIAL_TIMEOUT;
         workQueue = new ArrayBlockingQueue<>(config.sws());
         worker = new Thread(this::writeToFile);
+        metrics = new Metrics();
 
         // Ensure connection closes in case of an unexpected error
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -36,6 +42,7 @@ public class Recv implements IServer {
             public void run() {
                 if (socket != null && !socket.isClosed())
                     socket.close();
+                System.out.println(metrics);
             }
         });
     }
@@ -58,17 +65,8 @@ public class Recv implements IServer {
             serverAddr = packet.getSocketAddress();
 
             synPacket = (TCPPacket) synPacket.deserialize(buf);
-            System.out.printf(FORMAT,
-                    "rcv",
-                    (System.nanoTime() - startTime) / 1e6,
-                    synPacket.isSyn() ? "S" : "-",
-                    synPacket.isAck() ? "A" : "-",
-                    synPacket.isFin() ? "F" : "-",
-                    synPacket.getPayload().length > 0 ? "D" : "-",
-                    synPacket.getSequenceNumber(),
-                    synPacket.getPayload().length,
-                    synPacket.getAcknowledgement()
-                );
+            log("rcv", synPacket);
+
             if (synPacket.isSyn())
                 break;
         }
@@ -84,17 +82,7 @@ public class Recv implements IServer {
             buf = synAckPacket.serialize();
             packet = new DatagramPacket(buf, buf.length, serverAddr);
 
-            System.out.printf(FORMAT,
-                    "snd",
-                    (System.nanoTime() - startTime) / 1e6,
-                    synAckPacket.isSyn() ? "S" : "-",
-                    synAckPacket.isAck() ? "A" : "-",
-                    synAckPacket.isFin() ? "F" : "-",
-                    synAckPacket.getPayload().length > 0 ? "D" : "-",
-                    synAckPacket.getSequenceNumber(),
-                    synAckPacket.getPayload().length,
-                    synAckPacket.getAcknowledgement()
-                );
+            log("snd", synAckPacket);
             socket.send(packet);
 
             // GET ACK
@@ -112,17 +100,7 @@ public class Recv implements IServer {
             TCPPacket recvAckPacket = new TCPPacket();
             recvAckPacket = (TCPPacket) recvAckPacket.deserialize(buf);
 
-            System.out.printf(FORMAT,
-                    "rcv",
-                    (System.nanoTime() - startTime) / 1e6,
-                    recvAckPacket.isSyn() ? "S" : "-",
-                    recvAckPacket.isAck() ? "A" : "-",
-                    recvAckPacket.isFin() ? "F" : "-",
-                    recvAckPacket.getPayload().length > 0 ? "D" : "-",
-                    recvAckPacket.getSequenceNumber(),
-                    recvAckPacket.getPayload().length,
-                    recvAckPacket.getAcknowledgement()
-                );
+            log("rcv", recvAckPacket);
 
             if (recvAckPacket.isSyn()) {
                 nextByte = synPacket.getSequenceNumber() + 1;
@@ -133,9 +111,14 @@ public class Recv implements IServer {
                 continue;
 
             if (recvAckPacket.getAcknowledgement() == 1) {
+                estimatedRoundTripTime = System.nanoTime() - recvAckPacket.getTimeStamp();
+                estimatedDeviation = 0;
+
+                timeout = 2 * estimatedRoundTripTime;
+
+                isConnected = true;
                 socket.setSoTimeout(0);
                 seqNo++;
-                isConnected = true;
                 startTime = System.nanoTime();
                 return;
             }
@@ -157,17 +140,7 @@ public class Recv implements IServer {
 
             TCPPacket dataPacket = new TCPPacket();
             dataPacket = (TCPPacket) dataPacket.deserialize(buf);
-            System.out.printf(FORMAT,
-                    "rcv",
-                    (System.nanoTime() - startTime) / 1e6,
-                    dataPacket.isSyn() ? "S" : "-",
-                    dataPacket.isAck() ? "A" : "-",
-                    dataPacket.isFin() ? "F" : "-",
-                    dataPacket.getPayload().length > 0 ? "D" : "-",
-                    dataPacket.getSequenceNumber(),
-                    dataPacket.getPayload().length,
-                    dataPacket.getAcknowledgement()
-                );
+            log("rcv", dataPacket);
 
             if (dataPacket.isFin()) {
                 isConnected = false;
@@ -175,17 +148,7 @@ public class Recv implements IServer {
                 ackPacket.setFlag(TCPFlag.ACK, true);
                 buf = ackPacket.serialize();
                 pkt = new DatagramPacket(buf, buf.length, serverAddr);
-                System.out.printf(FORMAT,
-                    "snd",
-                    (System.nanoTime() - startTime) / 1e6,
-                    ackPacket.isSyn() ? "S" : "-",
-                    ackPacket.isAck() ? "A" : "-",
-                    ackPacket.isFin() ? "F" : "-",
-                    ackPacket.getPayload().length > 0 ? "D" : "-",
-                    ackPacket.getSequenceNumber(),
-                    ackPacket.getPayload().length,
-                    ackPacket.getAcknowledgement()
-                );
+                log("snd", ackPacket);
                 socket.send(pkt);
                 return;
             }
@@ -207,17 +170,7 @@ public class Recv implements IServer {
             ackPacket.setFlag(TCPFlag.ACK, true);
             buf = ackPacket.serialize();
             pkt = new DatagramPacket(buf, buf.length, serverAddr);
-            System.out.printf(FORMAT,
-                "snd",
-                (System.nanoTime() - startTime) / 1e6,
-                ackPacket.isSyn() ? "S" : "-",
-                ackPacket.isAck() ? "A" : "-",
-                ackPacket.isFin() ? "F" : "-",
-                ackPacket.getPayload().length > 0 ? "D" : "-",
-                ackPacket.getSequenceNumber(),
-                ackPacket.getPayload().length,
-                ackPacket.getAcknowledgement()
-            );
+            log("snd", ackPacket);
             socket.send(pkt);
         }
     }
@@ -257,51 +210,100 @@ public class Recv implements IServer {
         isConnected = false;
         worker.interrupt();
 
-        for (int i = 0; i < MAX_RETRIES; i++) {
-            TCPPacket finAckPacket = new TCPPacket(seqNo, nextByte);
-            finAckPacket.setFlag(TCPFlag.FIN, true);
-
-            byte[] buf = finAckPacket.serialize();
-            DatagramPacket packet = new DatagramPacket(buf, buf.length, serverAddr);
-
-            System.out.printf(FORMAT,
-                "snd",
-                (System.nanoTime() - startTime) / 1e6,
-                finAckPacket.isSyn() ? "S" : "-",
-                finAckPacket.isAck() ? "A" : "-",
-                finAckPacket.isFin() ? "F" : "-",
-                finAckPacket.getPayload().length > 0 ? "D" : "-",
-                finAckPacket.getSequenceNumber(),
-                finAckPacket.getPayload().length,
-                finAckPacket.getAcknowledgement()
-            );
-            socket.send(packet);
-
-            // GET ACK
-            socket.setSoTimeout(INITIAL_TIMEOUT);
-
-            try {
-                buf = new byte[config.mtu()];
-                DatagramPacket ackPacket = new DatagramPacket(buf, buf.length);
-                socket.receive(ackPacket);
-                TCPPacket pkt = (TCPPacket)(new TCPPacket()).deserialize(buf);
-                System.out.printf(FORMAT,
-                    "snd",
-                    (System.nanoTime() - startTime) / 1e6,
-                    pkt.isSyn() ? "S" : "-",
-                    "A",
-                    "-",
-                    pkt.getPayload().length > 0 ? "D" : "-",
-                    pkt.getSequenceNumber(),
-                    pkt.getPayload().length,
-                    pkt.getAcknowledgement()
-                );
-            } catch (SocketTimeoutException e) {
-                continue;
+        (new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(INITIAL_TIMEOUT);
+                    System.exit(0); // CLOSE
+                } catch (InterruptedException e) {}
             }
-            return;
-        }
+        }).start();
 
-        throw new IllegalStateException("Failed to properly close");
+        TCPPacket pkt = new TCPPacket(seqNo++, nextByte);
+        pkt.setFlag(TCPFlag.FIN, true);
+        byte[] finBuf = pkt.serialize();
+        DatagramPacket dPkt = new DatagramPacket(finBuf, finBuf.length, serverAddr);
+
+        PeriodicTask finSend = new PeriodicTask(
+            () -> {
+                try {
+                    socket.send(dPkt);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.exit(-11);
+                }
+            }, timeout
+        );
+
+        finSend.start();
+
+        (new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(INITIAL_TIMEOUT);
+                    System.exit(0); // CLOSE
+                } catch (InterruptedException e) {}
+            }
+        }).start();
+
+        for (int i = 0; i < MAX_RETRIES; i++) {
+            byte[] buf = new byte[config.mtu()];
+            DatagramPacket recvPacket = new DatagramPacket(buf, buf.length);
+            socket.receive(recvPacket);
+
+            TCPPacket recvPkt = new TCPPacket();
+            recvPkt = (TCPPacket) recvPkt.deserialize(buf);
+            log("rcv", recvPkt);
+
+            if (recvPkt.isFin()) {
+                TCPPacket ack;
+                ack = new TCPPacket(seqNo, recvPkt.getSequenceNumber() + 1);
+                ack.setFlag(TCPFlag.ACK, true);
+                buf = ack.serialize();
+                recvPacket = new DatagramPacket(buf, buf.length, serverAddr);
+                log("snd", ack);
+                socket.send(recvPacket);
+                continue;
+            } else if (recvPkt.isAck()) {
+                finSend.stop();
+            }
+        }
+    }
+
+    private final void log(String type, TCPPacket packet) {
+        System.out.printf(FORMAT,
+            type,
+            (System.nanoTime() - startTime) / 1e6,
+            packet.isSyn() ? "S" : "-",
+            packet.isAck() ? "A" : "-",
+            packet.isFin() ? "F" : "-",
+            packet.getPayload().length > 0 ? "D" : "-",
+            packet.getSequenceNumber(),
+            packet.getPayload().length,
+            packet.getAcknowledgement()
+        );
+    }
+
+    private void recomputeTimeout(long ackTimeStamp) {
+        final double a = 0.875;
+        final double b = 0.75;
+
+        final long C = System.nanoTime();
+        final long T = ackTimeStamp;
+
+        long ERTT = estimatedRoundTripTime;
+        long EDEV = estimatedDeviation;
+
+        final long SRTT = (C - T);
+        final long SDEV = Math.abs(SRTT - ERTT);
+        ERTT = (long)(a * ERTT + (1 - a) * SRTT);
+        EDEV = (long)(b * EDEV + (1 - b) * SDEV);
+        final long TO = ERTT + 4 * EDEV;
+
+        estimatedRoundTripTime = ERTT;
+        estimatedDeviation = EDEV;
+        timeout = TO;
     }
 }

@@ -84,17 +84,7 @@ public class Sender implements IClient {
             try {
                 if (nRetries > Sender.MAX_RETRIES)
                     done();
-                System.out.printf(FORMAT,
-                    "snd",
-                    (System.nanoTime() - sender.startTime) / 1e6,
-                    packet.isSyn() ? "S" : "-",
-                    packet.isAck() ? "A" : "-",
-                    packet.isFin() ? "F" : "-",
-                    packet.getPayload().length > 0 ? "D" : "-",
-                    packet.getSequenceNumber(),
-                    packet.getPayload().length,
-                    packet.getAcknowledgement()
-                );
+                sender.log("snd", packet);
                 sender.socket.send(dPacket);
                 nRetries++;
             } catch (IOException e) {
@@ -138,17 +128,7 @@ public class Sender implements IClient {
 
                 TCPPacket ackPacket = (new TCPPacket());
                 ackPacket = (TCPPacket) ackPacket.deserialize(buf);
-                System.out.printf(FORMAT,
-                    "rcv",
-                    (System.nanoTime() - sender.startTime) / 1e6,
-                    ackPacket.isSyn() ? "S" : "-",
-                    ackPacket.isAck() ? "A" : "-",
-                    ackPacket.isFin() ? "F" : "-",
-                    ackPacket.getPayload().length > 0 ? "D" : "-",
-                    ackPacket.getSequenceNumber(),
-                    ackPacket.getPayload().length,
-                    ackPacket.getAcknowledgement()
-                );
+                sender.log("rcv", ackPacket);
 
                 if (ackPacket.isFin()) {
                     stop();
@@ -249,6 +229,9 @@ public class Sender implements IClient {
     // For synchronization
     private Object monitor;
 
+    // For metrics
+    private final Metrics metrics;
+
     public Sender(SendConfig config) throws IOException {
         this.config = config;
         socket = new DatagramSocket(config.port());
@@ -263,6 +246,7 @@ public class Sender implements IClient {
         timeout = INITIAL_TIMEOUT;
 
         monitor = new Object();
+        metrics = new Metrics();
 
         // Ensure connection closes in case of an unexpected error
         Runtime.getRuntime().addShutdownHook(new Thread(){
@@ -270,6 +254,7 @@ public class Sender implements IClient {
             public void run() {
                 if (!socket.isClosed())
                     socket.close();
+                System.out.println(metrics);
             }
         });
     }
@@ -288,7 +273,9 @@ public class Sender implements IClient {
 
             DatagramPacket pkt;
             pkt = new DatagramPacket(buf, len, serverAddr);
+            log("snd", packet);
             socket.send(pkt);  // Part 1 of 3-way handshake
+            metrics.packetsTransferred++;
 
             buf = new byte[config.mtu()];
             len = buf.length;
@@ -302,10 +289,10 @@ public class Sender implements IClient {
             }
 
             TCPPacket recvPkt = (TCPPacket)(new TCPPacket()).deserialize(buf);
+            log("rcv", packet);
 
-            if (!recvPkt.isSyn() || !recvPkt.isAck()) {
+            if (!recvPkt.isSyn() || !recvPkt.isAck())
                 continue;
-            }
 
             lastSeqNo = recvPkt.getSequenceNumber();
 
@@ -316,6 +303,7 @@ public class Sender implements IClient {
             len = buf.length;
             pkt = new DatagramPacket(buf, len, serverAddr);
 
+            log("send", ackPacket);
             socket.send(pkt);  // Part 3 of 3-way handshake
 
             estimatedRoundTripTime = System.nanoTime() - recvPkt.getTimeStamp();
@@ -331,10 +319,6 @@ public class Sender implements IClient {
         }
 
         throw new IllegalStateException("Failed to connect!");
-    }
-
-    private void handleSynAck() {
-
     }
 
     public void sendFile() throws FileNotFoundException {
@@ -392,38 +376,37 @@ public class Sender implements IClient {
         pkt.setFlag(TCPFlag.FIN, true);
 
         DataSender sender = new DataSender(this, pkt);
-        synchronized (monitor) {
-            sender.send();
-        }
-        boolean gotFinAck = false;
-        for (int i = 0; i < MAX_RETRIES && !gotFinAck; i++) {
-            byte[] buf = new byte[config.mtu()];
-            DatagramPacket finAckDpkt = new DatagramPacket(buf, buf.length);
 
-            socket.receive(finAckDpkt);
-            pkt = (TCPPacket) pkt.deserialize(buf);
-            System.out.printf(FORMAT,
-                "rcv",
-                (System.nanoTime() - startTime) / 1e6,
-                pkt.isSyn() ? "S" : "-",
-                pkt.isAck() ? "A" : "-",
-                pkt.isFin() ? "F" : "-",
-                pkt.getPayload().length > 0 ? "D" : "-",
-                pkt.getSequenceNumber(),
-                pkt.getPayload().length,
-                pkt.getAcknowledgement()
-            );
-
-            if (pkt.isAck()) {
-                System.out.println("GOT FIN ACK");
-                gotFinAck = true;
-                sender.done();
+        (new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(INITIAL_TIMEOUT);
+                    System.exit(0); // CLOSE
+                } catch (InterruptedException e) {}
             }
+        }).start();
 
-            if (pkt.isFin()) {
-                pkt.setFlag(TCPFlag.FIN, false);
-                pkt.setFlag(TCPFlag.ACK, true);
-                sender.fastRetransmit(); // Allows us to send non-periodic
+        for (int i = 0; i < MAX_RETRIES; i++) {
+            byte[] buf = new byte[config.mtu()];
+            DatagramPacket recvPacket = new DatagramPacket(buf, buf.length);
+            socket.receive(recvPacket);
+
+            TCPPacket recvPkt = new TCPPacket();
+            recvPkt = (TCPPacket) recvPkt.deserialize(buf);
+            log("rcv", recvPkt);
+
+            if (recvPkt.isFin()) {
+                TCPPacket ack;
+                ack = new TCPPacket(seqNo, recvPkt.getSequenceNumber() + 1);
+                ack.setFlag(TCPFlag.ACK, true);
+                buf = ack.serialize();
+                recvPacket = new DatagramPacket(buf, buf.length, serverAddr);
+                log("snd", ack);
+                socket.send(recvPacket);
+                continue;
+            } else if (recvPkt.isAck()) {
+                sender.done();
             }
         }
     }
@@ -447,5 +430,19 @@ public class Sender implements IClient {
         estimatedRoundTripTime = ERTT;
         estimatedDeviation = EDEV;
         timeout = TO;
+    }
+
+    private final void log(String type, TCPPacket packet) {
+        System.out.printf(FORMAT,
+            type,
+            (System.nanoTime() - startTime) / 1e6,
+            packet.isSyn() ? "S" : "-",
+            packet.isAck() ? "A" : "-",
+            packet.isFin() ? "F" : "-",
+            packet.getPayload().length > 0 ? "D" : "-",
+            packet.getSequenceNumber(),
+            packet.getPayload().length,
+            packet.getAcknowledgement()
+        );
     }
 }
