@@ -1,9 +1,10 @@
-import java.net.DatagramSocket;
-import java.net.SocketTimeoutException;
-import java.net.DatagramPacket;
-import java.net.SocketAddress;
-import java.io.IOException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -251,7 +252,12 @@ public class Recv implements IServer {
         for (int i = 0; i < MAX_RETRIES; i++) {
             byte[] buf = new byte[config.mtu()];
             DatagramPacket recvPacket = new DatagramPacket(buf, buf.length);
-            socket.receive(recvPacket);
+            try {
+                socket.receive(recvPacket);
+            } catch (SocketException e) {
+                // Socket was closed by timeout
+                System.exit(0);
+            }
 
             TCPPacket recvPkt = new TCPPacket();
             recvPkt = (TCPPacket) recvPkt.deserialize(buf);

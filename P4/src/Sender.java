@@ -7,6 +7,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -390,7 +391,12 @@ public class Sender implements IClient {
         for (int i = 0; i < MAX_RETRIES; i++) {
             byte[] buf = new byte[config.mtu()];
             DatagramPacket recvPacket = new DatagramPacket(buf, buf.length);
-            socket.receive(recvPacket);
+            try {
+                socket.receive(recvPacket);
+            } catch (SocketException e) {
+                // Socket was closed by timeout
+                System.exit(0);
+            }
 
             TCPPacket recvPkt = new TCPPacket();
             recvPkt = (TCPPacket) recvPkt.deserialize(buf);
