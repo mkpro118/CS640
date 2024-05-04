@@ -182,7 +182,7 @@ public class TCPPacket implements ITCPPacket {
         pos += TIMESTAMP_SIZE; // Move to length
         length = intFromBytes(packet, pos);
 
-        pos += LENGTH_SIZE + ALL_ZEROS_SIZE; // Move to checksum
+        pos = CHECKSUM_OFFSET; // Move to checksum
         checksum = shortFromBytes(packet, pos);
 
         pos += CHECKSUM_SIZE; // Move to Payload
