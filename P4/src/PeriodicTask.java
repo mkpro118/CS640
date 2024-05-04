@@ -127,7 +127,7 @@ public class PeriodicTask implements Runnable {
             thread.interrupt();
             thread.join();
         } catch (InterruptedException e) {
-            if (!Thread.currentThread().isInterrupted())
+            if (Thread.currentThread().isInterrupted())
                 e.printStackTrace(System.err);
         }
         thread = null;
