@@ -7,6 +7,7 @@ public class TCPPacket implements ITCPPacket {
     private int length;
     private short checksum;
     private byte[] payload;
+    private byte[] packet;
     private short internalChecksum;
 
     // Maximum segment size
@@ -141,7 +142,7 @@ public class TCPPacket implements ITCPPacket {
     public byte[] serialize() {
         int pos = 0;
 
-        byte[] packet = new byte[HEADER_SIZE + payload.length];
+        packet = new byte[HEADER_SIZE + payload.length];
 
         byte[][] header = {
             toBytes(sequenceNumber),  // 4 bytes
@@ -171,6 +172,7 @@ public class TCPPacket implements ITCPPacket {
     @Override
     public ITCPPacket deserialize(byte[] packet) {
         int pos = 0;
+        this.packet = packet;
 
         sequenceNumber = intFromBytes(packet, pos);
 
@@ -208,12 +210,7 @@ public class TCPPacket implements ITCPPacket {
 
     public final boolean isChecksumValid() {
         short chksm = getChecksum();
-        setChecksum((short) 0);
-        serialize();
-        if (getChecksum() != chksm) {
-            System.out.println("chksm = " + chksm);
-            System.out.println("getChecksum() = " + getChecksum());
-        }
+        computeChecksum(packet);
         return getChecksum() == chksm;
     }
 
