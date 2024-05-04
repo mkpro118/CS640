@@ -209,6 +209,10 @@ public class TCPPacket implements ITCPPacket {
         short chksm = getChecksum();
         setChecksum((short) 0);
         serialize();
+        if (getChecksum() != chksm) {
+            System.out.println("chksm = " + chksm);
+            System.out.println("getChecksum() = " + getChecksum());
+        }
         return getChecksum() == chksm;
     }
 
