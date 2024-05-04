@@ -1,5 +1,10 @@
 import java.util.Arrays;
 
+/**
+ * @author Mrigank Kumar
+ *
+ * Represents a TCP Packet and implements associated functionality
+ */
 public class TCPPacket implements ITCPPacket {
     private int sequenceNumber;
     private int acknowledgement;

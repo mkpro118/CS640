@@ -8,6 +8,11 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * @author Arushi Mishra
+ *
+ * Implements a TCP Receiver
+ */
 public class Recv implements IServer {
     private final RecvConfig config;
     private DatagramSocket socket;

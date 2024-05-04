@@ -1,5 +1,10 @@
 import java.io.IOException;
 
+/**
+ * @author Arushi Mishra
+ *
+ * Interface specifying a server/receiver
+ */
 public interface IServer {
     public void bind() throws IOException;
     public void accept() throws IOException;

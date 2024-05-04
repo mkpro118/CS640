@@ -1,3 +1,8 @@
+/**
+ * @author Mrigank Kumar
+ *
+ * Interface specifying a TCP Packet
+ */
 public interface ITCPPacket {
     public short getChecksum();
     public void setChecksum(short checksum);

@@ -13,6 +13,11 @@ import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * @author Mrigank Kumar
+ *
+ * Implements a TCP Sender
+ */
 public class Sender implements IClient {
     @SuppressWarnings("serial")
     private final static class WorkQueue extends ArrayBlockingQueue<DataSender> {

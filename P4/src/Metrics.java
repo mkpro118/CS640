@@ -1,16 +1,34 @@
+/**
+ * @author Mrigank Kumar
+ *
+ * A data class for metrics.
+ */
 public class Metrics {
-    public int dataTransferred; // Amount of Data transferred/received
-    public int packetsTransferred; // Number of packets sent/received
-    public int packetsDiscarded; // Number of out-of-sequence packets discarded
-    public int wrongChecksum; // Number of packets discarded due to incorrect checksum
-    public int retransmissionCount;  // Number of retransmissions
-    public int duplicateAckCount; // Number of duplicate acknowledgements
+    /* Amount of Data transferred/received */
+    public int dataTransferred;
 
-    private final static String FORMAT;
+    /* Number of packets sent/received */
+    public int packetsTransferred;
+
+    /* Number of out-of-sequence packets discarded */
+    public int packetsDiscarded;
+
+    /* Number of packets discarded due to incorrect checksum */
+    public int wrongChecksum;
+
+    /* Number of retransmissions */
+    public int retransmissionCount;
+
+    /* Number of duplicate acknowledgements */
+    public int duplicateAckCount;
+
+    /* Horizontal line for output isolation */
     private final static String HR;
 
+    /* Output format */
+    private final static String FORMAT;
+
     static {
-        // Horizontal line
         HR = "-".repeat(80) + "\n";
         FORMAT = "\n" + HR + "Amount of Data transferred/received: %d\n"
                + "Number of packets sent/received: %d\n"

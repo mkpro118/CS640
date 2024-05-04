@@ -1,5 +1,10 @@
 import java.io.IOException;
 
+/**
+ * @author Arushi Mishra
+ *
+ * Main class for TCP End Hosts
+ */
 public final class TCPend {
     public final static void main(String[] args) {
         ArgParser parser = new ArgParser();
